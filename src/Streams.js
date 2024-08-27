@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import { Icon, Card, Table, Modal, Input } from "antd";
+import { Card, Table, Modal, Input } from "antd";
+import { LockOutlined } from '@ant-design/icons';
 import { secondsToDhmsSimple } from "./Util";
 import Flvplayer from "./Flvplayer";
 import Cookies from 'universal-cookie';
@@ -162,7 +163,7 @@ class Streams extends Component {
       <Card>
         <Input.Password
           size="large"
-          prefix={<Icon type="lock" style={{ color: 'rgba(0,0,0,.25)' }} />}
+          prefix={<LockOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
           style={{ marginBottom: "16px" }}
           placeholder="input password"
           onChange={this.updatePass}
@@ -173,6 +174,7 @@ class Streams extends Component {
           loading={this.state.loading}
           bordered
           small
+          scroll={{ x: "max-content" }}
           pagination={false}
         />
       </Card>
