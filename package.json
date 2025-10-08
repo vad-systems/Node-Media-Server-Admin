@@ -1,6 +1,6 @@
 {
   "name": "@vad-systems/node-media-server-admin",
-  "version": "0.1.0-dev1",
+  "version": "0.1.0-dev2",
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -12,7 +12,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router": "^7.9.3",
-    "universal-cookie": "^8.0.1"
+    "universal-cookie": "^8.0.1",
+    "usehooks-ts": "^3.1.1"
   },
   "devDependencies": {
     "@eslint-react/eslint-plugin": "^2.0.6",

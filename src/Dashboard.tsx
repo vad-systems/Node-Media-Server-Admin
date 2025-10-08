@@ -1,8 +1,8 @@
 import { Card, Col, Row } from 'antd';
-import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts-for-react';
+import ReactECharts from 'echarts-for-react';
 import React, { useCallback, useState } from 'react';
-import { useInterval } from './hooks/useInterval.js';
+import { useInterval } from 'usehooks-ts';
 import bytesToBand from './util/bytesToBand.js';
 
 function getOption(name: string): EChartsOption {

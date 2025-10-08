@@ -1,10 +1,11 @@
 import { DashboardOutlined, ProfileOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import React from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 const AppMenu = () => {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const menuItems = [
         {
@@ -32,6 +33,7 @@ const AppMenu = () => {
             theme="dark"
             mode="inline"
             items={menuItems}
+            selectedKeys={[location.pathname.replace(/\/$/, '')]}
         />
     );
 };

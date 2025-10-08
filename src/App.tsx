@@ -1,19 +1,20 @@
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { Layout } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router';
+import { useLocalStorage } from 'usehooks-ts';
 import AppMenu from './AppMenu.js';
 import Dashboard from './Dashboard.js';
 import Profile from './Profile.js';
 import Streams from './Streams.js';
+import pkg from '../package.json';
 
 import './App.css';
 
 const { Header, Sider, Content, Footer } = Layout;
 
-
 const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
-    const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useLocalStorage('nms.admin.menu.collapsed', false);
 
     const toggle = useCallback(() => {
         setCollapsed(!collapsed);
@@ -56,7 +57,7 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                             href={'https://github.com/vad-systems/Node-Media-Server'}
                             target={'_blank'}
                             rel={'nofollow'}
-                        >Node-Media-Server</a> | based on <a
+                        >Node-Media-Server {pkg.version}</a> | based on <a
                         href={'https://github.com/illuspas/Node-Media-Server/tree/v2'}
                         target={'_blank'}
                         rel={'nofollow'}
