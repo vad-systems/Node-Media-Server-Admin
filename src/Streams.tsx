@@ -6,6 +6,7 @@ import Cookies from 'universal-cookie';
 import Flvplayer from './FlvPlayer.js';
 import bytesToSize from './util/bytesToSize.js';
 import secondsToDhmsSimple from './util/secondsToDhmsSimple.js';
+import spaceship from './util/spaceship.js';
 
 type ClientData = {
     app: string;
@@ -158,9 +159,8 @@ const Streams = () => {
                             render: (connectCreated: string) => {
                                 const now = new Date().getTime();
                                 const connected = new Date(connectCreated).getTime();
-                                const msDelta = connected - now;
 
-                                return secondsToDhmsSimple(msDelta / 1000);
+                                return secondsToDhmsSimple((connected - now) / 1000);
                             },
                         },
 
@@ -294,6 +294,17 @@ const Streams = () => {
         ];
     }, [password, openVideo]);
 
+    const sortedStreams = streamsData.sort(
+        (
+            { app: aApp, name: aName, id: aId },
+            { app: bApp, name: bName, id: bId },
+        ) => {
+            return spaceship(aApp, bApp)
+            || spaceship(aName, bName)
+            || spaceship(aId, bId);
+        }
+    );
+
     return (
         <Fragment>
             <Card>
@@ -306,7 +317,7 @@ const Streams = () => {
                     value={password}
                 />
                 <Table
-                    dataSource={streamsData}
+                    dataSource={sortedStreams}
                     columns={columns}
                     loading={loading}
                     bordered

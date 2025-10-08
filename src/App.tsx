@@ -57,7 +57,7 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                             href={'https://github.com/vad-systems/Node-Media-Server'}
                             target={'_blank'}
                             rel={'nofollow'}
-                        >Node-Media-Server {pkg.version}</a> | based on <a
+                        >Node-Media-Server</a> Admin {pkg.version} | based on <a
                         href={'https://github.com/illuspas/Node-Media-Server/tree/v2'}
                         target={'_blank'}
                         rel={'nofollow'}
