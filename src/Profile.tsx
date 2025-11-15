@@ -3,6 +3,7 @@ import { Card, Table } from 'antd';
 import React, { Fragment, useCallback, useEffect, useState } from 'react';
 import bytesToSize from './util/bytesToSize.js';
 import secondsToDhms from './util/secondsToDhms.js';
+import Package from '../package.json';
 
 type ProfileData = {
     key: number;
@@ -42,10 +43,11 @@ const Profile = () => {
                 let memInfo = { key: 2, name: 'Memory', value: bytesToSize(data.mem.totle) };
                 let nodeInfo = { key: 3, name: 'Node.js', value: data.nodejs.version };
                 let uptimeInfo = { key: 4, name: 'Uptime', value: secondsToDhms(data.nodejs.uptime) };
-                let versionInfo = { key: 5, name: 'Version', value: data.version };
+                let versionInfo = { key: 5, name: 'Node Media Server Version', value: data.version };
+                let frontendVersionInfo = { key: 6, name: 'Node Media Server Admin Version', value: Package.version };
 
                 setLoading(false);
-                setData([osInfo, cpuInfo, memInfo, nodeInfo, uptimeInfo, versionInfo]);
+                setData([osInfo, cpuInfo, memInfo, nodeInfo, uptimeInfo, versionInfo, frontendVersionInfo]);
             })
             .catch(e => {
                 setLoading(false);

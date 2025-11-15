@@ -1,4 +1,4 @@
-import { DashboardOutlined, ProfileOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { DashboardOutlined, ProfileOutlined, VideoCameraOutlined, SettingOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router';
@@ -25,6 +25,12 @@ const AppMenu = () => {
             onClick: () => navigate('/admin/profile', { replace: true }),
             label: 'Profile',
             icon: <ProfileOutlined />,
+        },
+        {
+            key: '/admin/config',
+            onClick: () => navigate('/admin/config', { replace: true }),
+            label: 'Config',
+            icon: <SettingOutlined />,
         },
     ];
 

@@ -1,8 +1,9 @@
 import { DeleteOutlined, LockOutlined } from '@ant-design/icons';
 import { Card, Input, Modal, Table } from 'antd';
 import { md5 } from 'js-md5';
-import React, { ChangeEventHandler, Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { ChangeEventHandler, Fragment, useCallback, useMemo, useState } from 'react';
 import Cookies from 'universal-cookie';
+import { useInterval } from 'usehooks-ts';
 import Flvplayer from './FlvPlayer.js';
 import bytesToSize from './util/bytesToSize.js';
 import secondsToDhmsSimple from './util/secondsToDhmsSimple.js';
@@ -73,7 +74,9 @@ const Streams = () => {
                                 vc: stream.video ? stream.video.codec + ' ' + stream.video.profile : '',
                                 size: stream.video ? stream.video.width + 'x' + stream.video.height : '',
                                 fps: stream.video ? Math.floor(stream.video.fps).toString() : '',
-                                time: secondsToDhmsSimple((now - connected) / 1000),
+                                time: secondsToDhmsSimple((
+                                    now - connected
+                                ) / 1000),
                                 clients: clients,
                                 clientCount: clients.length,
                             };
@@ -90,9 +93,7 @@ const Streams = () => {
             });
     }, []);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useInterval(fetchData, 2000);
 
     const updatePass = useCallback<ChangeEventHandler<HTMLInputElement>>(({ target }) => {
         let password = target.value;
@@ -136,43 +137,35 @@ const Streams = () => {
                     dataSource={record.clients}
                     columns={[
                         {
-                            title: "ID",
-                            key: "clientId",
-                            dataIndex: "clientId",
+                            title: 'ID',
+                            key: 'clientId',
+                            dataIndex: 'clientId',
                         },
                         {
-                            title: "Connection",
-                            key: "ip",
-                            dataIndex: "ip",
-                            render: (ip: string, record: ClientData) =>  `${record.protocol} @ ${ip}`,
+                            title: 'Connection',
+                            key: 'ip',
+                            dataIndex: 'ip',
+                            render: (ip: string, record: ClientData) => `${record.protocol} @ ${ip}`,
                         },
                         {
-                            title: "Data",
-                            key: "bytes",
-                            dataIndex: "bytes",
+                            title: 'Data',
+                            key: 'bytes',
+                            dataIndex: 'bytes',
                             render: (bytes: number) => bytesToSize(bytes),
                         },
                         {
-                            title: "Time",
-                            key: "connectCreated",
-                            dataIndex: "connectCreated",
+                            title: 'Time',
+                            key: 'connectCreated',
+                            dataIndex: 'connectCreated',
                             render: (connectCreated: string) => {
                                 const now = new Date().getTime();
                                 const connected = new Date(connectCreated).getTime();
 
-                                return secondsToDhmsSimple((now - connected) / 1000);
+                                return secondsToDhmsSimple((
+                                    now - connected
+                                ) / 1000);
                             },
                         },
-
-                        /**
-                         *     app: string;
-                         *     stream: string;
-                         *     bytes: number;
-                         *     clientId: string;
-                         *     connectCreated: string;
-                         *     ip: string;
-                         *     protocol: string;
-                         */
                     ]}
                     bordered
                     scroll={{ x: 'max-content' }}
@@ -300,9 +293,9 @@ const Streams = () => {
             { app: bApp, name: bName, id: bId },
         ) => {
             return spaceship(aApp, bApp)
-            || spaceship(aName, bName)
-            || spaceship(aId, bId);
-        }
+                || spaceship(aName, bName)
+                || spaceship(aId, bId);
+        },
     );
 
     return (
