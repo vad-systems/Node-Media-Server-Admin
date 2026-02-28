@@ -1,6 +1,6 @@
 {
   "name": "@vad-systems/node-media-server-admin",
-  "version": "0.1.0-dev2",
+  "version": "0.1.0-dev3",
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
