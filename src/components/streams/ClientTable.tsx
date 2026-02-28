@@ -11,6 +11,7 @@ type ClientTableProps = {
 const ClientTable = ({ clients }: ClientTableProps) => (
     <Table
         dataSource={clients}
+        rowKey="clientId"
         columns={[
             {
                 title: 'ID',

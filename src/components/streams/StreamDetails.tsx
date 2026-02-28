@@ -7,9 +7,10 @@ import secondsToDhms from '../../util/secondsToDhms';
 interface StreamDetailsProps {
     app: string;
     stream: string;
+    ip?: string;
 }
 
-const StreamDetails = ({ app, stream }: StreamDetailsProps) => {
+const StreamDetails = ({ app, stream, ip }: StreamDetailsProps) => {
     const { data, loading } = useFetch(() => api.getStream(app, stream), {
         immediate: true,
         refreshInterval: 5000,
@@ -23,6 +24,7 @@ const StreamDetails = ({ app, stream }: StreamDetailsProps) => {
 
     return (
         <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="IP">{ip || 'N/A'}</Descriptions.Item>
             <Descriptions.Item label="Live">{data.isLive ? <Tag color="success">YES</Tag> : <Tag color="error">NO</Tag>}</Descriptions.Item>
             <Descriptions.Item label="Viewers">{data.viewers}</Descriptions.Item>
             <Descriptions.Item label="Duration">{secondsToDhms(data.duration)}</Descriptions.Item>

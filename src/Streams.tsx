@@ -1,7 +1,7 @@
-import { LockOutlined } from '@ant-design/icons';
-import { App, Card, Input, Skeleton } from 'antd';
+import { LockOutlined, SyncOutlined } from '@ant-design/icons';
+import { App, Card, Input, Flex, Modal, Radio } from 'antd';
 import { md5 } from 'js-md5';
-import React, { ChangeEventHandler, Fragment, useCallback, useState } from 'react';
+import React, { ChangeEventHandler, Fragment, useCallback, useState, useMemo } from 'react';
 import Cookies from 'universal-cookie';
 import { api } from './api/service';
 import { StreamStats } from './api/types.js';
@@ -20,19 +20,28 @@ const Streams = () => {
 
     const [password, setPassword] = useState(cookies.get('pass') || '');
     const [streamsData, setStreamsData] = useState<StreamData[]>([]);
+    const [grouping, setGrouping] = useState<'none' | 'app' | 'prefix'>('none');
+    const [viewingStreamKey, setViewingStreamKey] = useState<string | null>(null);
+    const [modalType, setModalType] = useState<'clients' | 'details' | null>(null);
+
     const onError = useCallback(async (e: Error) => {
         console.warn(e);
         await message.error(`Failed to fetch streams: ${e.message}`);
     }, [message]);
     const onSuccess = useCallback((data: StreamStats) => {
         setStreamsData(transformStreamsData(data));
-    }, [setStreamsData, transformStreamsData]);
+    }, [setStreamsData]);
     const { loading, refetch } = useFetch(api.getStreams, {
         immediate: true,
         refreshInterval: 2000,
         onSuccess,
         onError,
     });
+
+    const currentViewingStream = useMemo(() => {
+        if (!viewingStreamKey) return null;
+        return streamsData.find(s => `${s.app}/${s.name}` === viewingStreamKey) || null;
+    }, [viewingStreamKey, streamsData]);
 
     const updatePass = useCallback<ChangeEventHandler<HTMLInputElement>>(({ target }) => {
         const password = target.value;
@@ -63,23 +72,14 @@ const Streams = () => {
     }, [password, modal]);
 
     const showClients = useCallback((record: StreamData) => {
-        modal.info({
-            icon: null,
-            title: `Clients /${record.app}/${record.name}`,
-            width: 800,
-            height: 640,
-            content: <ClientTable clients={record.clients} />,
-        });
-    }, [modal]);
+        setViewingStreamKey(`${record.app}/${record.name}`);
+        setModalType('clients');
+    }, []);
 
     const showDetails = useCallback((record: StreamData) => {
-        modal.info({
-            icon: null,
-            title: `Stream Details: /${record.app}/${record.name}`,
-            width: 500,
-            content: <StreamDetails app={record.app} stream={record.name} />,
-        });
-    }, [modal]);
+        setViewingStreamKey(`${record.app}/${record.name}`);
+        setModalType('details');
+    }, []);
 
     const deleteStream = useCallback((record: StreamData) => {
         let sign = '';
@@ -101,20 +101,80 @@ const Streams = () => {
             });
     }, [password, refetch, message]);
 
-    const sortedStreams = streamsData.sort(
-        (
-            { app: aApp, name: aName, id: aId },
-            { app: bApp, name: bName, id: bId },
-        ) => {
-            return spaceship(aApp, bApp)
-                || spaceship(aName, bName)
-                || spaceship(aId, bId);
-        },
-    );
+    const displayData = useMemo(() => {
+        const sorted = [...streamsData].sort(
+            (
+                { app: aApp, name: aName, id: aId },
+                { app: bApp, name: bName, id: bId },
+            ) => {
+                return spaceship(aApp, bApp)
+                    || spaceship(aName, bName)
+                    || spaceship(aId, bId);
+            },
+        );
+
+        if (grouping === 'none') return sorted;
+
+        if (grouping === 'app') {
+            const groups: Record<string, StreamData[]> = {};
+            sorted.forEach(s => {
+                if (!groups[s.app]) groups[s.app] = [];
+                groups[s.app].push(s);
+            });
+            return Object.entries(groups).map(([app, streams]) => ({
+                key: `group-app-${app}`,
+                app,
+                name: `(${streams.length} streams)`,
+                isGroup: true,
+                children: streams,
+            })) as any[];
+        }
+
+        if (grouping === 'prefix') {
+            const groups: Record<string, StreamData[]> = {};
+            sorted.forEach(s => {
+                const lastUnderscore = s.name.lastIndexOf('_');
+                const prefix = lastUnderscore !== -1 ? s.name.substring(0, lastUnderscore) : s.name;
+                if (!groups[prefix]) groups[prefix] = [];
+                groups[prefix].push(s);
+            });
+            return Object.entries(groups).map(([prefix, streams]) => {
+                const sameApp = streams.length > 0 && streams.every(s => s.app === streams[0].app);
+                return {
+                    key: `group-prefix-${prefix}`,
+                    app: sameApp ? streams[0].app : 'Multiple',
+                    name: `${prefix} (${streams.length} streams)`,
+                    isGroup: true,
+                    children: streams,
+                };
+            }) as any[];
+        }
+
+        return sorted;
+    }, [streamsData, grouping]);
+
+    const closeModal = () => {
+        setViewingStreamKey(null);
+        setModalType(null);
+    };
 
     return (
         <Fragment>
-            <Card>
+            <Card 
+                title={
+                    <Flex align="center" gap="small">
+                        <span>Active Streams</span>
+                        {loading && <SyncOutlined spin style={{ color: '#1890ff' }} />}
+                    </Flex>
+                }
+                extra={
+                    <Radio.Group value={grouping} onChange={e => setGrouping(e.target.value)} size="small">
+                        <Radio.Button value="none">None</Radio.Button>
+                        <Radio.Button value="app">App</Radio.Button>
+                        <Radio.Button value="prefix">Prefix</Radio.Button>
+                    </Radio.Group>
+                }
+            >
                 <Input.Password
                     size="large"
                     prefix={<LockOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
@@ -123,19 +183,31 @@ const Streams = () => {
                     onChange={updatePass}
                     value={password}
                 />
-                {loading && sortedStreams.length === 0 ? (
-                    <Skeleton active paragraph={{ rows: 10 }} />
-                ) : (
-                    <StreamTable
-                        dataSource={sortedStreams}
-                        loading={loading}
-                        openVideo={openVideo}
-                        showClients={showClients}
-                        showDetails={showDetails}
-                        deleteStream={deleteStream}
-                    />
-                )}
+                <StreamTable
+                    dataSource={displayData}
+                    loading={loading && streamsData.length === 0}
+                    openVideo={openVideo}
+                    showClients={showClients}
+                    showDetails={showDetails}
+                    deleteStream={deleteStream}
+                />
             </Card>
+
+            <Modal
+                title={modalType === 'clients' ? `Clients /${currentViewingStream?.app}/${currentViewingStream?.name}` : `Stream Details: /${currentViewingStream?.app}/${currentViewingStream?.name}`}
+                open={!!modalType}
+                onCancel={closeModal}
+                footer={null}
+                width={modalType === 'clients' ? 800 : 500}
+                destroyOnClose
+            >
+                {modalType === 'clients' && currentViewingStream && (
+                    <ClientTable clients={currentViewingStream.clients} />
+                )}
+                {modalType === 'details' && currentViewingStream && (
+                    <StreamDetails app={currentViewingStream.app} stream={currentViewingStream.name} ip={currentViewingStream.ip} />
+                )}
+            </Modal>
         </Fragment>
     );
 };

@@ -1,3 +1,5 @@
+import React from 'react';
+
 export type ClientData = {
     app: string;
     stream: string;
@@ -9,7 +11,7 @@ export type ClientData = {
 };
 
 export type StreamData = {
-    key: number;
+    key: React.Key;
     app: string;
     name: string;
     id: string;
@@ -23,4 +25,6 @@ export type StreamData = {
     time: string;
     clients: ClientData[];
     clientCount: number;
+    isGroup?: boolean;
+    children?: StreamData[];
 };

@@ -88,6 +88,19 @@ export interface Config {
     trans?: TransConfig;
     relay?: RelayConfig;
     fission?: FissionConfig;
+    auth?: AuthConfig;
+    cluster?: object;
+    logType?: number;
+    rollingLogLength?: number;
+}
+
+export interface AuthConfig {
+    api?: boolean;
+    api_user?: string;
+    api_pass?: string;
+    play?: boolean;
+    publish?: boolean;
+    secret?: string;
 }
 
 export interface PublisherInfo {

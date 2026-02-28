@@ -23,22 +23,21 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: (name: string, record: StreamData) => (
-                <a href="##" onClick={(e) => {
-                    e.preventDefault();
-                    openVideo(record);
-                }}>{name}</a>
-            ),
+            render: (name: string, record: any) => {
+                if (record.isGroup) return <strong>{name}</strong>;
+                return (
+                    <a href="##" onClick={(e) => {
+                        e.preventDefault();
+                        openVideo(record);
+                    }}>{name}</a>
+                );
+            },
         },
         {
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
-        },
-        {
-            title: 'IP',
-            dataIndex: 'ip',
-            key: 'ip',
+            render: (id: string, record: any) => record.isGroup ? null : id,
         },
         {
             title: 'Audio',
@@ -80,38 +79,45 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             title: 'Time',
             dataIndex: 'time',
             key: 'time',
+            render: (time: string, record: any) => record.isGroup ? null : time,
         },
         {
             title: 'Clients',
             dataIndex: 'clients',
             key: 'clients',
-            render: (_: any, record: StreamData) => (
-                <a href="##" onClick={(e) => {
-                    e.preventDefault();
-                    showClients(record);
-                }}>{record.clientCount}</a>
-            ),
+            render: (_: any, record: any) => {
+                if (record.isGroup) return null;
+                return (
+                    <a href="##" onClick={(e) => {
+                        e.preventDefault();
+                        showClients(record);
+                    }}>{record.clientCount}</a>
+                );
+            },
         },
         {
             title: 'Actions',
             dataIndex: 'actions',
             key: 'actions',
-            render: (_: any, record: StreamData) => (
-                <Space size="middle">
-                    <a href="##" onClick={(e) => {
-                        e.preventDefault();
-                        showDetails(record);
-                    }} title="Details">
-                        <InfoCircleOutlined />
-                    </a>
-                    <a href="##" onClick={(e) => {
-                        e.preventDefault();
-                        deleteStream(record);
-                    }} style={{ color: 'red' }} title="Delete">
-                        <DeleteOutlined />
-                    </a>
-                </Space>
-            ),
+            render: (_: any, record: any) => {
+                if (record.isGroup) return null;
+                return (
+                    <Space size="middle">
+                        <a href="##" onClick={(e) => {
+                            e.preventDefault();
+                            showDetails(record);
+                        }} title="Details">
+                            <InfoCircleOutlined />
+                        </a>
+                        <a href="##" onClick={(e) => {
+                            e.preventDefault();
+                            deleteStream(record);
+                        }} style={{ color: 'red' }} title="Delete">
+                            <DeleteOutlined />
+                        </a>
+                    </Space>
+                );
+            },
         },
     ], [openVideo, showClients, showDetails, deleteStream]);
 

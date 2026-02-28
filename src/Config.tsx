@@ -1,9 +1,22 @@
-import { CloudUploadOutlined, InteractionOutlined, NodeIndexOutlined, PartitionOutlined, SettingOutlined, SaveOutlined } from '@ant-design/icons';
-import { App, Card, Col, Flex, Row, Switch, Form, InputNumber, Input, Button, Skeleton } from 'antd';
+import { 
+    CloudUploadOutlined, 
+    InteractionOutlined, 
+    NodeIndexOutlined, 
+    PartitionOutlined, 
+    SettingOutlined, 
+    SaveOutlined,
+    LockOutlined,
+    SafetyCertificateOutlined,
+    FileTextOutlined,
+    ClusterOutlined
+} from '@ant-design/icons';
+import { App, Card, Col, Flex, Row, Switch, Form, InputNumber, Input, Button, Skeleton, Divider, Typography, Alert } from 'antd';
 import React, { useCallback, useEffect } from 'react';
 import { api } from './api/service';
 import { Config as ConfigType } from './api/types';
 import { useFetch } from './hooks/useFetch';
+
+const { Text } = Typography;
 
 const Config = () => {
     const { message } = App.useApp();
@@ -21,15 +34,25 @@ const Config = () => {
     useEffect(() => {
         if (config) {
             form.setFieldsValue({
-                http_port: config.http.port,
-                mediaroot: config.http.mediaroot,
-                allow_origin: config.http.allow_origin,
-                https_port: config.https.port,
-                rtmp_port: config.rtmp?.port,
-                rtmp_chunk_size: config.rtmp?.chunk_size,
-                rtmp_gop_cache: config.rtmp?.gop_cache,
-                rtmp_ping: config.rtmp?.ping,
-                rtmp_ping_timeout: config.rtmp?.ping_timeout,
+                http: config.http,
+                https: config.https,
+                rtmp: config.rtmp,
+                auth: config.auth,
+                trans: {
+                    ffmpeg: config.trans?.ffmpeg,
+                    // keep tasks as JSON for now to keep the UI clean
+                    tasks: JSON.stringify(config.trans?.tasks, null, 2),
+                },
+                relay: {
+                    ffmpeg: config.relay?.ffmpeg,
+                    tasks: JSON.stringify(config.relay?.tasks, null, 2),
+                },
+                fission: {
+                    ffmpeg: config.fission?.ffmpeg,
+                    tasks: JSON.stringify(config.fission?.tasks, null, 2),
+                },
+                logType: config.logType,
+                rollingLogLength: config.rollingLogLength,
             });
         }
     }, [config, form]);
@@ -37,23 +60,30 @@ const Config = () => {
     const onFinish = useCallback(async (values: any) => {
         try {
             const patch: any = {
-                http: {
-                    port: values.http_port,
-                    mediaroot: values.mediaroot,
-                    allow_origin: values.allow_origin,
-                },
-                https: {
-                    port: values.https_port,
-                },
+                http: values.http,
+                https: values.https,
+                rtmp: values.rtmp,
+                auth: values.auth,
+                logType: values.logType,
+                rollingLogLength: values.rollingLogLength,
             };
 
-            if (config?.rtmp) {
-                patch.rtmp = {
-                    port: values.rtmp_port,
-                    chunk_size: values.rtmp_chunk_size,
-                    gop_cache: values.rtmp_gop_cache,
-                    ping: values.rtmp_ping,
-                    ping_timeout: values.rtmp_ping_timeout,
+            if (values.trans) {
+                patch.trans = {
+                    ffmpeg: values.trans.ffmpeg,
+                    tasks: values.trans.tasks ? JSON.parse(values.trans.tasks) : [],
+                };
+            }
+            if (values.relay) {
+                patch.relay = {
+                    ffmpeg: values.relay.ffmpeg,
+                    tasks: values.relay.tasks ? JSON.parse(values.relay.tasks) : [],
+                };
+            }
+            if (values.fission) {
+                patch.fission = {
+                    ffmpeg: values.fission.ffmpeg,
+                    tasks: values.fission.tasks ? JSON.parse(values.fission.tasks) : [],
                 };
             }
 
@@ -63,31 +93,18 @@ const Config = () => {
         } catch (e: any) {
             message.error(`Update failed: ${e.message}`);
         }
-    }, [api, message, config, refetch]);
+    }, [api, message, refetch]);
 
     if (loading && !config) {
         return (
             <Row gutter={[16, 16]}>
-                <Col span={24}>
-                    <Card title={<Skeleton.Button active size="small" />} extra={<Skeleton.Button active />}>
-                        <Skeleton active paragraph={{ rows: 4 }} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card title={<Skeleton.Button active size="small" />}>
-                        <Skeleton active paragraph={{ rows: 2 }} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card title={<Skeleton.Button active size="small" />}>
-                        <Skeleton active paragraph={{ rows: 2 }} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card title={<Skeleton.Button active size="small" />}>
-                        <Skeleton active paragraph={{ rows: 2 }} />
-                    </Card>
-                </Col>
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <Col span={24} key={i}>
+                        <Card title={<Skeleton.Button active size="small" />} extra={i === 1 ? <Skeleton.Button active /> : null}>
+                            <Skeleton active paragraph={{ rows: 3 }} />
+                        </Card>
+                    </Col>
+                ))}
             </Row>
         );
     }
@@ -98,31 +115,46 @@ const Config = () => {
             layout="vertical"
             onFinish={onFinish}
             initialValues={{}}
+            disabled
         >
             <Row gutter={[16, 16]}>
                 <Col span={24}>
+                    <Alert
+                        message="Config Editing Disabled"
+                        description="Direct configuration editing via the UI is currently disabled for security reasons and to address known bugs. Please use the server's configuration file for any changes."
+                        type="warning"
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                    />
+                </Col>
+                <Col span={24}>
                     <Card 
                         title={<Flex align="center" gap="small"><SettingOutlined /><span>HTTP/S Configuration</span></Flex>}
-                        extra={<Button type="primary" icon={<SaveOutlined />} htmlType="submit">Save Changes</Button>}
+                        extra={<Button type="primary" icon={<SaveOutlined />} htmlType="submit" disabled>Save Changes</Button>}
                     >
                         <Row gutter={16}>
-                            <Col xs={24} sm={12} md={8}>
-                                <Form.Item name="http_port" label="HTTP Port">
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['http', 'port']} label="HTTP Port">
                                     <InputNumber style={{ width: '100%' }} />
                                 </Form.Item>
                             </Col>
-                            <Col xs={24} sm={12} md={8}>
-                                <Form.Item name="https_port" label="HTTPS Port">
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['https', 'port']} label="HTTPS Port">
                                     <InputNumber style={{ width: '100%' }} />
                                 </Form.Item>
                             </Col>
-                            <Col xs={24} sm={12} md={8}>
-                                <Form.Item name="allow_origin" label="Allow Origin">
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['http', 'allow_origin']} label="Allow Origin">
                                     <Input />
                                 </Form.Item>
                             </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['http', 'api']} label="Enable API" valuePropName="checked">
+                                    <Switch />
+                                </Form.Item>
+                            </Col>
                             <Col span={24}>
-                                <Form.Item name="mediaroot" label="Media Root">
+                                <Form.Item name={['http', 'mediaroot']} label="Media Root">
                                     <Input />
                                 </Form.Item>
                             </Col>
@@ -130,53 +162,120 @@ const Config = () => {
                     </Card>
                 </Col>
 
-                {config?.rtmp && (
-                    <Col span={24}>
-                        <Card title={<Flex align="center" gap="small"><CloudUploadOutlined /><span>RTMP Configuration</span></Flex>}>
-                            <Row gutter={16}>
-                                <Col xs={24} sm={12} md={6}>
-                                    <Form.Item name="rtmp_port" label="RTMP Port">
-                                        <InputNumber style={{ width: '100%' }} />
-                                    </Form.Item>
-                                </Col>
-                                <Col xs={24} sm={12} md={6}>
-                                    <Form.Item name="rtmp_chunk_size" label="Chunk Size">
-                                        <InputNumber style={{ width: '100%' }} />
-                                    </Form.Item>
-                                </Col>
-                                <Col xs={24} sm={12} md={6}>
-                                    <Form.Item name="rtmp_ping" label="Ping Interval">
-                                        <InputNumber style={{ width: '100%' }} />
-                                    </Form.Item>
-                                </Col>
-                                <Col xs={24} sm={12} md={6}>
-                                    <Form.Item name="rtmp_ping_timeout" label="Ping Timeout">
-                                        <InputNumber style={{ width: '100%' }} />
-                                    </Form.Item>
-                                </Col>
-                                <Col xs={24} sm={12} md={6}>
-                                    <Form.Item name="rtmp_gop_cache" label="GOP Cache" valuePropName="checked">
-                                        <Switch />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </Card>
-                    </Col>
-                )}
+                <Col span={24}>
+                    <Card title={<Flex align="center" gap="small"><CloudUploadOutlined /><span>RTMP Configuration</span></Flex>}>
+                        <Row gutter={16}>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'port']} label="RTMP Port">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'chunk_size']} label="Chunk Size">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'ping']} label="Ping Interval">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'ping_timeout']} label="Ping Timeout">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'gop_cache']} label="GOP Cache" valuePropName="checked">
+                                    <Switch />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+                </Col>
+
+                <Col span={24}>
+                    <Card title={<Flex align="center" gap="small"><LockOutlined /><span>Authentication</span></Flex>}>
+                        <Row gutter={16}>
+                            <Col xs={24} sm={12} md={4}>
+                                <Form.Item name={['auth', 'api']} label="API Auth" valuePropName="checked">
+                                    <Switch />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['auth', 'api_user']} label="API User">
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['auth', 'api_pass']} label="API Password">
+                                    <Input.Password />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={4}>
+                                <Form.Item name={['auth', 'play']} label="Play Auth" valuePropName="checked">
+                                    <Switch />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={4}>
+                                <Form.Item name={['auth', 'publish']} label="Publish Auth" valuePropName="checked">
+                                    <Switch />
+                                </Form.Item>
+                            </Col>
+                            <Col span={24}>
+                                <Form.Item name={['auth', 'secret']} label="Secret Key">
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+                </Col>
 
                 <Col xs={24} md={8}>
                     <Card title={<Flex align="center" gap="small"><PartitionOutlined /><span>Transcoding</span></Flex>}>
-                        <pre style={{ fontSize: '10px' }}>{JSON.stringify(config?.trans, null, 2)}</pre>
+                        <Form.Item name={['trans', 'ffmpeg']} label="FFmpeg Path">
+                            <Input />
+                        </Form.Item>
+                        <Form.Item name={['trans', 'tasks']} label="Tasks (JSON)">
+                            <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
+                        </Form.Item>
                     </Card>
                 </Col>
                 <Col xs={24} md={8}>
                     <Card title={<Flex align="center" gap="small"><NodeIndexOutlined /><span>Relay</span></Flex>}>
-                        <pre style={{ fontSize: '10px' }}>{JSON.stringify(config?.relay, null, 2)}</pre>
+                        <Form.Item name={['relay', 'ffmpeg']} label="FFmpeg Path">
+                            <Input />
+                        </Form.Item>
+                        <Form.Item name={['relay', 'tasks']} label="Tasks (JSON)">
+                            <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
+                        </Form.Item>
                     </Card>
                 </Col>
                 <Col xs={24} md={8}>
                     <Card title={<Flex align="center" gap="small"><InteractionOutlined /><span>Fission</span></Flex>}>
-                        <pre style={{ fontSize: '10px' }}>{JSON.stringify(config?.fission, null, 2)}</pre>
+                        <Form.Item name={['fission', 'ffmpeg']} label="FFmpeg Path">
+                            <Input />
+                        </Form.Item>
+                        <Form.Item name={['fission', 'tasks']} label="Tasks (JSON)">
+                            <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
+                        </Form.Item>
+                    </Card>
+                </Col>
+
+                <Col span={24}>
+                    <Card title={<Flex align="center" gap="small"><FileTextOutlined /><span>Logging</span></Flex>}>
+                        <Row gutter={16}>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name="logType" label="Log Type">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name="rollingLogLength" label="Rolling Log Length">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
                     </Card>
                 </Col>
             </Row>

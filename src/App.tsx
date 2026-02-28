@@ -10,7 +10,6 @@ import Dashboard from './Dashboard';
 import Profile from './Profile';
 import Streams from './Streams';
 import Tasks from './Tasks';
-import ServerControl from './ServerControl';
 
 import './App.css';
 
@@ -33,7 +32,6 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                     collapsible
                     collapsed={collapsed}
                     breakpoint="lg"
-                    collapsedWidth="0"
                     onCollapse={(c) => setCollapsed(c)}
                 >
 
@@ -58,7 +56,6 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                             <Route path="/admin" Component={Dashboard} />
                             <Route path="/admin/streams" Component={Streams} />
                             <Route path="/admin/tasks" Component={Tasks} />
-                            <Route path="/admin/control" Component={ServerControl} />
                             <Route path="/admin/profile" Component={Profile} />
                             <Route path="/admin/config" Component={Config} />
                         </Routes>
