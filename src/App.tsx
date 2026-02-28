@@ -3,11 +3,12 @@ import { Layout } from 'antd';
 import React, { useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router';
 import { useLocalStorage } from 'usehooks-ts';
+import pkg from '../package.json';
 import AppMenu from './AppMenu.js';
+import Config from './Config.js';
 import Dashboard from './Dashboard.js';
 import Profile from './Profile.js';
 import Streams from './Streams.js';
-import pkg from '../package.json';
 
 import './App.css';
 
@@ -50,6 +51,7 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                             <Route path="/admin" Component={Dashboard} />
                             <Route path="/admin/streams" Component={Streams} />
                             <Route path="/admin/profile" Component={Profile} />
+                            <Route path="/admin/config" Component={Config} />
                         </Routes>
                     </Content>
                     <Footer style={{ textAlign: 'center' }}>
