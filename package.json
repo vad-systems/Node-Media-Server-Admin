@@ -1,6 +1,6 @@
 {
   "name": "@vad-systems/node-media-server-admin",
-  "version": "0.1.0-dev6",
+  "version": "0.1.0-dev7",
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
@@ -19,6 +19,7 @@
     "@eslint-react/eslint-plugin": "^2.0.6",
     "@parcel/packager-raw-url": "^2.16.0",
     "@parcel/transformer-webmanifest": "^2.16.0",
+    "@types/node": "^22.19.13",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "buffer": "^6.0.3",

@@ -1,119 +1,52 @@
-import { DeleteOutlined, LockOutlined } from '@ant-design/icons';
-import { Card, Input, Modal, Table } from 'antd';
+import { LockOutlined } from '@ant-design/icons';
+import { App, Card, Input, Skeleton } from 'antd';
 import { md5 } from 'js-md5';
-import React, { ChangeEventHandler, Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { ChangeEventHandler, Fragment, useCallback, useState } from 'react';
 import Cookies from 'universal-cookie';
-import { useInterval } from 'usehooks-ts';
-import Flvplayer from './FlvPlayer.js';
-import bytesToSize from './util/bytesToSize.js';
-import secondsToDhmsSimple from './util/secondsToDhmsSimple.js';
-import spaceship from './util/spaceship.js';
-
-type ClientData = {
-    app: string;
-    stream: string;
-    bytes: number;
-    clientId: string;
-    connectCreated: string;
-    ip: string;
-    protocol: string;
-};
-
-type StreamData = {
-    key: number;
-    app: string;
-    name: string;
-    id: string;
-    ip: string;
-    ac: string;
-    freq: string;
-    chan: string;
-    vc: string;
-    size: string;
-    fps: string;
-    time: string;
-    clients: ClientData[];
-    clientCount: number;
-};
+import { api } from './api/service';
+import { StreamStats } from './api/types.js';
+import Flvplayer from './FlvPlayer';
+import ClientTable from './components/streams/ClientTable';
+import StreamDetails from './components/streams/StreamDetails';
+import StreamTable from './components/streams/StreamTable';
+import { StreamData } from './components/streams/types';
+import { transformStreamsData } from './components/streams/utils';
+import { useFetch } from './hooks/useFetch';
+import spaceship from './util/spaceship';
 
 const Streams = () => {
-    const [cookies, setCookies] = useState(new Cookies());
+    const { message, modal } = App.useApp();
+    const [cookies] = useState(new Cookies());
 
     const [password, setPassword] = useState(cookies.get('pass') || '');
     const [streamsData, setStreamsData] = useState<StreamData[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [modal, contextHolder] = Modal.useModal();
-
-    const fetchData = useCallback(() => {
-        setLoading(true);
-
-        fetch('/api/streams', { credentials: 'include' })
-            .then(function (response) {
-                return response.json();
-            })
-            .then((data) => {
-                // Read total count from server
-                let streamsData = [];
-                let index = 0;
-                for (let app in data) {
-                    for (let name in data[app]) {
-                        let stream = data[app][name].publisher;
-                        let clients = data[app][name].subscribers;
-                        if (stream) {
-                            let now = new Date().getTime();
-                            let connected = new Date(stream.connectCreated).getTime();
-                            let streamData: StreamData = {
-                                key: index++,
-                                app,
-                                name,
-                                id: stream.clientId,
-                                ip: stream.ip,
-                                ac: stream.audio ? stream.audio.codec + ' ' + stream.audio.profile : '',
-                                freq: stream.audio ? stream.audio.samplerate : '',
-                                chan: stream.audio ? stream.audio.channels : '',
-                                vc: stream.video ? stream.video.codec + ' ' + stream.video.profile : '',
-                                size: stream.video ? stream.video.width + 'x' + stream.video.height : '',
-                                fps: stream.video ? Math.floor(stream.video.fps).toString() : '',
-                                time: secondsToDhmsSimple((
-                                    now - connected
-                                ) / 1000),
-                                clients: clients,
-                                clientCount: clients.length,
-                            };
-                            streamsData.push(streamData);
-                        }
-                    }
-                }
-
-                setLoading(false);
-                setStreamsData(streamsData);
-            })
-            .catch((e) => {
-                setLoading(false);
-            });
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-    useInterval(fetchData, 2000);
+    const onError = useCallback(async (e: Error) => {
+        console.warn(e);
+        await message.error(`Failed to fetch streams: ${e.message}`);
+    }, [message]);
+    const onSuccess = useCallback((data: StreamStats) => {
+        setStreamsData(transformStreamsData(data));
+    }, [setStreamsData, transformStreamsData]);
+    const { loading, refetch } = useFetch(api.getStreams, {
+        immediate: true,
+        refreshInterval: 2000,
+        onSuccess,
+        onError,
+    });
 
     const updatePass = useCallback<ChangeEventHandler<HTMLInputElement>>(({ target }) => {
-        let password = target.value;
+        const password = target.value;
         setPassword(password);
-        setCookies((cookies) => {
-            cookies.set('pass', password, { path: '/', maxAge: 31536000 });
-            return cookies;
-        });
-    }, []);
+        cookies.set('pass', password, { path: '/', maxAge: 31536000 });
+    }, [cookies]);
 
     const openVideo = useCallback((record: StreamData) => {
         let sign = '';
         if (password) {
-            let hash = md5.create();
-            let ext = Date.now() + 30000;
+            const hash = md5.create();
+            const ext = Date.now() + 30000;
             hash.update(`/${record.app}/${record.name}-${ext}-${password}`);
-            let key = hash.hex();
+            const key = hash.hex();
             sign = `?sign=${ext}-${key}`;
         }
 
@@ -135,160 +68,38 @@ const Streams = () => {
             title: `Clients /${record.app}/${record.name}`,
             width: 800,
             height: 640,
-            content: (
-                <Table
-                    dataSource={record.clients}
-                    columns={[
-                        {
-                            title: 'ID',
-                            key: 'clientId',
-                            dataIndex: 'clientId',
-                        },
-                        {
-                            title: 'Connection',
-                            key: 'ip',
-                            dataIndex: 'ip',
-                            render: (ip: string, record: ClientData) => `${record.protocol} @ ${ip}`,
-                        },
-                        {
-                            title: 'Data',
-                            key: 'bytes',
-                            dataIndex: 'bytes',
-                            render: (bytes: number) => bytesToSize(bytes),
-                        },
-                        {
-                            title: 'Time',
-                            key: 'connectCreated',
-                            dataIndex: 'connectCreated',
-                            render: (connectCreated: string) => {
-                                const now = new Date().getTime();
-                                const connected = new Date(connectCreated).getTime();
-
-                                return secondsToDhmsSimple((
-                                    now - connected
-                                ) / 1000);
-                            },
-                        },
-                    ]}
-                    bordered
-                    scroll={{ x: 'max-content' }}
-                    pagination={false}
-                />
-            ),
+            content: <ClientTable clients={record.clients} />,
         });
-    }, [password, modal]);
+    }, [modal]);
+
+    const showDetails = useCallback((record: StreamData) => {
+        modal.info({
+            icon: null,
+            title: `Stream Details: /${record.app}/${record.name}`,
+            width: 500,
+            content: <StreamDetails app={record.app} stream={record.name} />,
+        });
+    }, [modal]);
 
     const deleteStream = useCallback((record: StreamData) => {
         let sign = '';
         if (password) {
-            let hash = md5.create();
-            let ext = Date.now() + 30000;
+            const hash = md5.create();
+            const ext = Date.now() + 30000;
             hash.update(`/${record.app}/${record.name}-${ext}-${password}`);
-            let key = hash.hex();
+            const key = hash.hex();
             sign = `?sign=${ext}-${key}`;
         }
 
-        fetch(`/api/streams/${record.app}/${record.name}${sign}`, { credentials: 'include', method: 'DELETE' })
-            .then((response) => response.json())
-            .then((data) => {
-                setLoading(false);
-                fetchData();
+        api.deleteStream(record.app, record.name, sign)
+            .then(() => {
+                message.success(`Stream /${record.app}/${record.name} deleted`);
+                refetch();
             })
             .catch((e) => {
-                setLoading(false);
+                message.error(`Failed to delete stream: ${e.message}`);
             });
-    }, [password, modal]);
-
-    const columns = useMemo(() => {
-        return [
-            {
-                title: 'App',
-                dataIndex: 'app',
-                key: 'app',
-            },
-            {
-                title: 'Name',
-                dataIndex: 'name',
-                key: 'name',
-                render: (name: string, record: StreamData) => {
-                    return <a href="##" onClick={() => openVideo(record)}>{name}</a>;
-                },
-            },
-            {
-                title: 'ID',
-                dataIndex: 'id',
-                key: 'id',
-            },
-            {
-                title: 'IP',
-                dataIndex: 'ip',
-                key: 'ip',
-            },
-            {
-                title: 'Audio',
-                children: [
-                    {
-                        title: 'codec',
-                        dataIndex: 'ac',
-                        key: 'ac',
-                    }, {
-                        title: 'freq',
-                        dataIndex: 'freq',
-                        key: 'freq',
-                    }, {
-                        title: 'chan',
-                        dataIndex: 'chan',
-                        key: 'chan',
-                    },
-                ],
-            },
-            {
-                title: 'Video',
-                children: [
-                    {
-                        title: 'codec',
-                        dataIndex: 'vc',
-                        key: 'vc',
-                    }, {
-                        title: 'size',
-                        dataIndex: 'size',
-                        key: 'size',
-                    }, {
-                        title: 'fps',
-                        dataIndex: 'fps',
-                        key: 'fps',
-                    },
-                ],
-            },
-            {
-                title: 'Time',
-                dataIndex: 'time',
-                key: 'time',
-            },
-            {
-                title: 'Clients',
-                dataIndex: 'clients',
-                key: 'clients',
-                render: (name: string, record: StreamData) => {
-                    return <a href="##" onClick={() => showClients(record)}>{record.clientCount}</a>;
-                },
-            },
-            {
-                title: 'Actions',
-                dataIndex: 'actions',
-                key: 'actions',
-                render: (name: string, record: StreamData) => {
-                    return (
-                        <Fragment>
-                            <a href="##" onClick={() => deleteStream(record)}>
-                                <DeleteOutlined />
-                            </a>
-                        </Fragment>
-                    );
-                },
-            },
-        ];
-    }, [password, openVideo]);
+    }, [password, refetch, message]);
 
     const sortedStreams = streamsData.sort(
         (
@@ -312,16 +123,19 @@ const Streams = () => {
                     onChange={updatePass}
                     value={password}
                 />
-                <Table
-                    dataSource={sortedStreams}
-                    columns={columns}
-                    loading={loading}
-                    bordered
-                    scroll={{ x: 'max-content' }}
-                    pagination={false}
-                />
+                {loading && sortedStreams.length === 0 ? (
+                    <Skeleton active paragraph={{ rows: 10 }} />
+                ) : (
+                    <StreamTable
+                        dataSource={sortedStreams}
+                        loading={loading}
+                        openVideo={openVideo}
+                        showClients={showClients}
+                        showDetails={showDetails}
+                        deleteStream={deleteStream}
+                    />
+                )}
             </Card>
-            {contextHolder}
         </Fragment>
     );
 };

@@ -1,18 +1,21 @@
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import { Layout } from 'antd';
+import { Layout, App as AntApp, Flex, Typography } from 'antd';
 import React, { useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router';
 import { useLocalStorage } from 'usehooks-ts';
 import pkg from '../package.json';
-import AppMenu from './AppMenu.js';
-import Config from './Config.js';
-import Dashboard from './Dashboard.js';
-import Profile from './Profile.js';
-import Streams from './Streams.js';
+import AppMenu from './AppMenu';
+import Config from './Config';
+import Dashboard from './Dashboard';
+import Profile from './Profile';
+import Streams from './Streams';
+import Tasks from './Tasks';
+import ServerControl from './ServerControl';
 
 import './App.css';
 
 const { Header, Sider, Content, Footer } = Layout;
+const { Text } = Typography;
 
 const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
     const [collapsed, setCollapsed] = useLocalStorage('nms.admin.menu.collapsed', false);
@@ -22,12 +25,16 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
     }, [collapsed]);
     return (
         <Router>
-            <Layout style={{ minHeight: '100vh' }}>
-                <Sider
+            <AntApp>
+                <Layout style={{ minHeight: '100vh' }}>
+                    <Sider
                     width={256}
                     trigger={null}
                     collapsible
                     collapsed={collapsed}
+                    breakpoint="lg"
+                    collapsedWidth="0"
+                    onCollapse={(c) => setCollapsed(c)}
                 >
 
                     <div className="logo"><h1>{collapsed ? shortTitle : title}</h1></div>
@@ -50,24 +57,33 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                         <Routes>
                             <Route path="/admin" Component={Dashboard} />
                             <Route path="/admin/streams" Component={Streams} />
+                            <Route path="/admin/tasks" Component={Tasks} />
+                            <Route path="/admin/control" Component={ServerControl} />
                             <Route path="/admin/profile" Component={Profile} />
                             <Route path="/admin/config" Component={Config} />
                         </Routes>
                     </Content>
                     <Footer style={{ textAlign: 'center' }}>
-                        <a
-                            href={'https://github.com/vad-systems/Node-Media-Server'}
+                        <Flex justify="center" align="center" gap="small" wrap>
+                            <a
+                                href={'https://github.com/vad-systems/Node-Media-Server'}
+                                target={'_blank'}
+                                rel={'nofollow'}
+                            >Node-Media-Server</a>
+                            <Text type="secondary">Admin {pkg.version}</Text>
+                            <Text type="secondary">|</Text>
+                            <Text type="secondary">based on</Text>
+                            <a
+                            href={'https://github.com/illuspas/Node-Media-Server/tree/v2'}
                             target={'_blank'}
                             rel={'nofollow'}
-                        >Node-Media-Server</a> Admin {pkg.version} | based on <a
-                        href={'https://github.com/illuspas/Node-Media-Server/tree/v2'}
-                        target={'_blank'}
-                        rel={'nofollow'}
-                    >Node-Media-Server v2</a>
+                        >Node-Media-Server v2</a>
+                        </Flex>
                     </Footer>
                 </Layout>
             </Layout>
-        </Router>
+        </AntApp>
+    </Router>
     );
 };
 

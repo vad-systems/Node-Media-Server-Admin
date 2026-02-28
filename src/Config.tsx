@@ -1,188 +1,186 @@
-import { CloudUploadOutlined, InteractionOutlined, NodeIndexOutlined, PartitionOutlined, SettingOutlined } from '@ant-design/icons';
-import { Card, Col, Flex, Row, Switch } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
-
-type HttpConfig = {
-    readonly mediaroot?: string;
-    readonly port?: number;
-    readonly allow_origin?: string;
-    readonly api?: boolean;
-};
-
-type HttpsConfig = {
-    readonly port?: number;
-};
-
-type RtmpConfig = {
-    readonly port?: number;
-    readonly chunk_size?: number;
-    readonly ping?: number;
-    readonly ping_timeout?: number;
-    readonly gop_cache?: boolean;
-};
-
-type TransConfig = {
-    readonly ffmpeg: string;
-    readonly tasks: object[];
-};
-
-type RelayConfig = {
-    readonly ffmpeg: string;
-    readonly tasks: object[];
-};
-
-type FissionConfig = {
-    readonly ffmpeg: string;
-    readonly tasks: object[];
-};
-
-type ConfigData = {
-    http: HttpConfig,
-    https: HttpsConfig,
-    rtmp?: RtmpConfig,
-    trans?: TransConfig,
-    relay?: RelayConfig,
-    fission?: FissionConfig,
-};
-
-const HttpConfig = ({ http, https }: { http: HttpConfig, https: HttpsConfig }) => {
-    const title = (
-        <Flex justify={'flex-start'} align={'center'} gap={'small'}>
-            <SettingOutlined />
-            <Switch
-                checked={!!(
-                    https || http
-                )}
-                disabled
-            />
-            <span style={{ paddingLeft: '12px', fontSize: '16px' }}>HTTP/S Config</span>
-        </Flex>
-    );
-
-    return (
-        <Card title={title} style={{ height: '100%' }}>
-            <pre>{JSON.stringify(http, undefined, 2)}</pre>
-            <pre>{JSON.stringify(https, undefined, 2)}</pre>
-        </Card>
-    );
-};
-
-const RtmpConfig = ({ rtmp }: { rtmp?: RtmpConfig }) => {
-    const title = (
-        <Flex justify={'flex-start'} align={'center'} gap={'small'}>
-            <CloudUploadOutlined />
-            <Switch
-                checked={!!rtmp}
-                disabled
-            />
-            <span style={{ paddingLeft: '12px', fontSize: '16px' }}>RTMP Config</span>
-        </Flex>
-    );
-
-    return (
-        <Card title={title} style={{ height: '100%' }}>
-            <pre>{JSON.stringify(rtmp, undefined, 2)}</pre>
-        </Card>
-    );
-};
-
-const TransConfig = ({ trans }: { trans?: TransConfig }) => {
-    const title = (
-        <Flex justify={'flex-start'} align={'center'} gap={'small'}>
-            <PartitionOutlined />
-            <Switch
-                checked={!!trans}
-                disabled
-            />
-            <span style={{ paddingLeft: '12px', fontSize: '16px' }}>Trans Config</span>
-        </Flex>
-    );
-
-    return (
-        <Card title={title} style={{ height: '100%' }}>
-            <pre>{JSON.stringify(trans, undefined, 2)}</pre>
-        </Card>
-    );
-};
-
-const RelayConfig = ({ relay }: { relay?: RelayConfig }) => {
-    const title = (
-        <Flex justify={'flex-start'} align={'center'} gap={'small'}>
-            <NodeIndexOutlined />
-            <Switch
-                checked={!!relay}
-                disabled
-            />
-            <span style={{ paddingLeft: '12px', fontSize: '16px' }}>Relay Config</span>
-        </Flex>
-    );
-
-    return (
-        <Card title={title} style={{ height: '100%' }}>
-            <pre>{JSON.stringify(relay, undefined, 2)}</pre>
-        </Card>
-    );
-};
-
-const FissionConfig = ({ fission }: { fission?: FissionConfig }) => {
-    const title = (
-        <Flex justify={'flex-start'} align={'center'} gap={'small'}>
-            <InteractionOutlined />
-            <Switch
-                checked={!!fission}
-                disabled
-            />
-            <span style={{ paddingLeft: '12px', fontSize: '16px' }}>Fission Config</span>
-        </Flex>
-    );
-
-    return (
-        <Card title={title} style={{ height: '100%' }}>
-            <pre>{JSON.stringify(fission, undefined, 2)}</pre>
-        </Card>
-    );
-};
+import { CloudUploadOutlined, InteractionOutlined, NodeIndexOutlined, PartitionOutlined, SettingOutlined, SaveOutlined } from '@ant-design/icons';
+import { App, Card, Col, Flex, Row, Switch, Form, InputNumber, Input, Button, Skeleton } from 'antd';
+import React, { useCallback, useEffect } from 'react';
+import { api } from './api/service';
+import { Config as ConfigType } from './api/types';
+import { useFetch } from './hooks/useFetch';
 
 const Config = () => {
-    const [config, setConfig] = useState<ConfigData | null>(null);
-    const [loading, setLoading] = useState(false);
+    const { message } = App.useApp();
+    const [form] = Form.useForm();
 
-    const fetchData = useCallback(() => {
-        setLoading(true);
+    const onError = useCallback(async (e: Error) => {
+        await message.error(`Failed to fetch config: ${e.message}`);
+    }, [message]);
 
-        fetch('/api/server/config', { credentials: 'include' })
-            .then((response) => response.json())
-            .then((data) => {
-                setLoading(false);
-                setConfig(data);
-            })
-            .catch(e => {
-                setLoading(false);
-            });
-    }, []);
+    const { data: config, loading, refetch } = useFetch(api.getConfig, {
+        immediate: true,
+        onError,
+    });
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (config) {
+            form.setFieldsValue({
+                http_port: config.http.port,
+                mediaroot: config.http.mediaroot,
+                allow_origin: config.http.allow_origin,
+                https_port: config.https.port,
+                rtmp_port: config.rtmp?.port,
+                rtmp_chunk_size: config.rtmp?.chunk_size,
+                rtmp_gop_cache: config.rtmp?.gop_cache,
+                rtmp_ping: config.rtmp?.ping,
+                rtmp_ping_timeout: config.rtmp?.ping_timeout,
+            });
+        }
+    }, [config, form]);
 
-    return config && (
-        <Row style={{ margin: '0 -12px' }} gutter={[16, 16]} wrap>
-            <Col span={24} style={{ alignSelf: 'stretch' }}>
-                <HttpConfig http={config.http} https={config.https} />
-            </Col>
-            <Col span={24} style={{ alignSelf: 'stretch' }}>
-                <RtmpConfig rtmp={config.rtmp} />
-            </Col>
-            <Col span={8} style={{ alignSelf: 'stretch' }}>
-                <TransConfig trans={config.trans} />
-            </Col>
-            <Col span={8} style={{ alignSelf: 'stretch' }}>
-                <RelayConfig relay={config.relay} />
-            </Col>
-            <Col span={8} style={{ alignSelf: 'stretch' }}>
-                <FissionConfig fission={config.fission} />
-            </Col>
-        </Row>
+    const onFinish = useCallback(async (values: any) => {
+        try {
+            const patch: any = {
+                http: {
+                    port: values.http_port,
+                    mediaroot: values.mediaroot,
+                    allow_origin: values.allow_origin,
+                },
+                https: {
+                    port: values.https_port,
+                },
+            };
+
+            if (config?.rtmp) {
+                patch.rtmp = {
+                    port: values.rtmp_port,
+                    chunk_size: values.rtmp_chunk_size,
+                    gop_cache: values.rtmp_gop_cache,
+                    ping: values.rtmp_ping,
+                    ping_timeout: values.rtmp_ping_timeout,
+                };
+            }
+
+            await api.updateConfig(patch);
+            message.success('Configuration updated successfully');
+            refetch();
+        } catch (e: any) {
+            message.error(`Update failed: ${e.message}`);
+        }
+    }, [api, message, config, refetch]);
+
+    if (loading && !config) {
+        return (
+            <Row gutter={[16, 16]}>
+                <Col span={24}>
+                    <Card title={<Skeleton.Button active size="small" />} extra={<Skeleton.Button active />}>
+                        <Skeleton active paragraph={{ rows: 4 }} />
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title={<Skeleton.Button active size="small" />}>
+                        <Skeleton active paragraph={{ rows: 2 }} />
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title={<Skeleton.Button active size="small" />}>
+                        <Skeleton active paragraph={{ rows: 2 }} />
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title={<Skeleton.Button active size="small" />}>
+                        <Skeleton active paragraph={{ rows: 2 }} />
+                    </Card>
+                </Col>
+            </Row>
+        );
+    }
+
+    return (
+        <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            initialValues={{}}
+        >
+            <Row gutter={[16, 16]}>
+                <Col span={24}>
+                    <Card 
+                        title={<Flex align="center" gap="small"><SettingOutlined /><span>HTTP/S Configuration</span></Flex>}
+                        extra={<Button type="primary" icon={<SaveOutlined />} htmlType="submit">Save Changes</Button>}
+                    >
+                        <Row gutter={16}>
+                            <Col xs={24} sm={12} md={8}>
+                                <Form.Item name="http_port" label="HTTP Port">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={8}>
+                                <Form.Item name="https_port" label="HTTPS Port">
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={8}>
+                                <Form.Item name="allow_origin" label="Allow Origin">
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                            <Col span={24}>
+                                <Form.Item name="mediaroot" label="Media Root">
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+                </Col>
+
+                {config?.rtmp && (
+                    <Col span={24}>
+                        <Card title={<Flex align="center" gap="small"><CloudUploadOutlined /><span>RTMP Configuration</span></Flex>}>
+                            <Row gutter={16}>
+                                <Col xs={24} sm={12} md={6}>
+                                    <Form.Item name="rtmp_port" label="RTMP Port">
+                                        <InputNumber style={{ width: '100%' }} />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <Form.Item name="rtmp_chunk_size" label="Chunk Size">
+                                        <InputNumber style={{ width: '100%' }} />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <Form.Item name="rtmp_ping" label="Ping Interval">
+                                        <InputNumber style={{ width: '100%' }} />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <Form.Item name="rtmp_ping_timeout" label="Ping Timeout">
+                                        <InputNumber style={{ width: '100%' }} />
+                                    </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12} md={6}>
+                                    <Form.Item name="rtmp_gop_cache" label="GOP Cache" valuePropName="checked">
+                                        <Switch />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Card>
+                    </Col>
+                )}
+
+                <Col xs={24} md={8}>
+                    <Card title={<Flex align="center" gap="small"><PartitionOutlined /><span>Transcoding</span></Flex>}>
+                        <pre style={{ fontSize: '10px' }}>{JSON.stringify(config?.trans, null, 2)}</pre>
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title={<Flex align="center" gap="small"><NodeIndexOutlined /><span>Relay</span></Flex>}>
+                        <pre style={{ fontSize: '10px' }}>{JSON.stringify(config?.relay, null, 2)}</pre>
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title={<Flex align="center" gap="small"><InteractionOutlined /><span>Fission</span></Flex>}>
+                        <pre style={{ fontSize: '10px' }}>{JSON.stringify(config?.fission, null, 2)}</pre>
+                    </Card>
+                </Col>
+            </Row>
+        </Form>
     );
 };
 

@@ -1,9 +1,11 @@
 import { HddOutlined } from '@ant-design/icons';
-import { Card, Table } from 'antd';
-import React, { Fragment, useCallback, useEffect, useState } from 'react';
-import bytesToSize from './util/bytesToSize.js';
-import secondsToDhms from './util/secondsToDhms.js';
+import { App, Card, Table, Skeleton } from 'antd';
+import React, { Fragment, useCallback, useMemo } from 'react';
+import { api } from './api/service';
+import bytesToSize from './util/bytesToSize';
+import secondsToDhms from './util/secondsToDhms';
 import Package from '../package.json';
+import { useFetch } from './hooks/useFetch';
 
 type ProfileData = {
     key: number;
@@ -24,39 +26,33 @@ const columns = [
 ];
 
 const Profile = () => {
-    const [data, setData] = useState<ProfileData[]>([]);
-    const [loading, setLoading] = useState(false);
+    const { message } = App.useApp();
 
-    const fetchData = useCallback(() => {
-        setLoading(true);
+    const onError = useCallback(async (e: Error) => {
+        await message.error(`Failed to fetch server info: ${e.message}`);
+    }, [message]);
+    
+    const { data: serverInfo, loading } = useFetch(api.getServerInfo, {
+        immediate: true,
+        onError,
+    });
 
-        fetch('/api/server', { credentials: 'include' })
-            .then((response) => response.json())
-            .then((data) => {
-                // Read total count from server
-                let osInfo = {
-                    key: 0,
-                    name: 'OS',
-                    value: data.os.arch + '_' + data.os.platform + '_' + data.os.release,
-                };
-                let cpuInfo = { key: 1, name: 'CPU', value: data.cpu.num + ' x ' + data.cpu.model };
-                let memInfo = { key: 2, name: 'Memory', value: bytesToSize(data.mem.total) };
-                let nodeInfo = { key: 3, name: 'Node.js', value: data.nodejs.version };
-                let uptimeInfo = { key: 4, name: 'Uptime', value: secondsToDhms(data.nodejs.uptime) };
-                let versionInfo = { key: 5, name: 'Node Media Server Version', value: data.version };
-                let frontendVersionInfo = { key: 6, name: 'Node Media Server Admin Version', value: Package.version };
-
-                setLoading(false);
-                setData([osInfo, cpuInfo, memInfo, nodeInfo, uptimeInfo, versionInfo, frontendVersionInfo]);
-            })
-            .catch(e => {
-                setLoading(false);
-            });
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    const data: ProfileData[] = useMemo(() => {
+        if (!serverInfo) return [];
+        return [
+            {
+                key: 0,
+                name: 'OS',
+                value: serverInfo.os.arch + '_' + serverInfo.os.platform + '_' + serverInfo.os.release,
+            },
+            { key: 1, name: 'CPU', value: serverInfo.cpu.num + ' x ' + serverInfo.cpu.model },
+            { key: 2, name: 'Memory', value: bytesToSize(serverInfo.mem.total) },
+            { key: 3, name: 'Node.js', value: serverInfo.nodejs.version },
+            { key: 4, name: 'Uptime', value: secondsToDhms(serverInfo.nodejs.uptime) },
+            { key: 5, name: 'Node Media Server Version', value: serverInfo.version },
+            { key: 6, name: 'Node Media Server Admin Version', value: Package.version },
+        ];
+    }, [serverInfo]);
 
     const title = (
         <Fragment>
@@ -67,13 +63,17 @@ const Profile = () => {
 
     return (
         <Card title={title}>
-            <Table
-                dataSource={data}
-                columns={columns}
-                loading={loading}
-                pagination={false}
-                showHeader={false}
-            />
+            {loading && !serverInfo ? (
+                <Skeleton active />
+            ) : (
+                <Table
+                    dataSource={data}
+                    columns={columns}
+                    loading={loading}
+                    pagination={false}
+                    showHeader={false}
+                />
+            )}
         </Card>
     );
 };

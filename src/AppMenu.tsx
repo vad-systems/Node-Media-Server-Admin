@@ -1,4 +1,4 @@
-import { DashboardOutlined, ProfileOutlined, VideoCameraOutlined, SettingOutlined } from '@ant-design/icons';
+import { CarryOutOutlined, ControlOutlined, DashboardOutlined, ProfileOutlined, SettingOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router';
@@ -19,6 +19,18 @@ const AppMenu = () => {
             label: 'Streams',
             onClick: () => navigate('/admin/streams', { replace: true }),
             icon: <VideoCameraOutlined />,
+        },
+        {
+            key: '/admin/tasks',
+            label: 'Tasks',
+            onClick: () => navigate('/admin/tasks', { replace: true }),
+            icon: <CarryOutOutlined />,
+        },
+        {
+            key: '/admin/control',
+            label: 'Server Control',
+            onClick: () => navigate('/admin/control', { replace: true }),
+            icon: <ControlOutlined />,
         },
         {
             key: '/admin/profile',

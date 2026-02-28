@@ -1,5 +1,4 @@
 import FlvJs from 'flv.js';
-import flvjs from 'flv.js';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import MediaSegment = FlvJs.MediaSegment;
 
@@ -21,16 +20,18 @@ type FlvPlayerProps = {
     config?: FlvJs.Config,
 };
 
-const FlvPlayer = ({ className, style, ...props }: FlvPlayerProps) => {
+const FlvPlayer = (props: FlvPlayerProps) => {
     const [flvPlayer, setFlvPlayer] = useState<FlvJs.Player | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
+
+    const { className, style, ...playerProps } = props;
 
     const initFlv = useCallback(($video: HTMLVideoElement) => {
         let flvPlayer: FlvJs.Player | null = null;
 
         if ($video) {
-            if (flvjs.isSupported()) {
-                flvPlayer = flvjs.createPlayer({ ...props }, props.config);
+            if (FlvJs.isSupported()) {
+                flvPlayer = FlvJs.createPlayer({ ...playerProps }, playerProps.config);
                 flvPlayer.attachMediaElement($video);
                 flvPlayer.load();
                 flvPlayer.play();
@@ -49,9 +50,9 @@ const FlvPlayer = ({ className, style, ...props }: FlvPlayerProps) => {
 
     useEffect(() => {
         if (videoRef.current) {
-            initFlv(videoRef.current);
+            return initFlv(videoRef.current);
         }
-    }, [videoRef.current]);
+    }, [videoRef.current, initFlv]);
 
     return (
         <video
