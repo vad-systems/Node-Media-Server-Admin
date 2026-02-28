@@ -58,8 +58,8 @@ const Streams = () => {
                         let stream = data[app][name].publisher;
                         let clients = data[app][name].subscribers;
                         if (stream) {
-                            let now = new Date().getTime() / 1000;
-                            let str = new Date(stream.connectCreated).getTime() / 1000;
+                            let now = new Date().getTime();
+                            let connected = new Date(stream.connectCreated).getTime();
                             let streamData: StreamData = {
                                 key: index++,
                                 app,
@@ -72,7 +72,7 @@ const Streams = () => {
                                 vc: stream.video ? stream.video.codec + ' ' + stream.video.profile : '',
                                 size: stream.video ? stream.video.width + 'x' + stream.video.height : '',
                                 fps: stream.video ? Math.floor(stream.video.fps).toString() : '',
-                                time: secondsToDhmsSimple(now - str),
+                                time: secondsToDhmsSimple((now - connected) / 1000),
                                 clients: clients,
                                 clientCount: clients.length,
                             };
@@ -127,7 +127,7 @@ const Streams = () => {
     const showClients = useCallback((record: StreamData) => {
         modal.info({
             icon: null,
-            title: 'Clients',
+            title: `Clients /${record.app}/${record.name}`,
             width: 640,
             height: 480,
             content: (
@@ -152,10 +152,16 @@ const Streams = () => {
                             render: (bytes: number) => bytesToSize(bytes),
                         },
                         {
-                            title: "Connected",
+                            title: "Time",
                             key: "connectCreated",
                             dataIndex: "connectCreated",
-                            render: (connectCreated: string) => new Date(connectCreated).toLocaleString(),
+                            render: (connectCreated: string) => {
+                                const now = new Date().getTime();
+                                const connected = new Date(connectCreated).getTime();
+                                const msDelta = connected - now;
+
+                                return secondsToDhmsSimple(msDelta / 1000);
+                            },
                         },
 
                         /**
