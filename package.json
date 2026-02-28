@@ -1,33 +1,35 @@
 {
-  "name": "node-media-server-admin",
-  "version": "0.1.0",
+  "name": "@vad-systems/node-media-server-admin",
+  "version": "0.1.0-dev1",
   "private": true,
   "dependencies": {
-    "antd": "^5.20.3",
-    "@ant-design/icons": "^5.4.0",
-    "babel-plugin-import": "^1.13.8",
-    "customize-cra": "^1.0.0",
-    "echarts": "^5.5.1",
+    "@ant-design/icons": "^6.1.0",
+    "antd": "^5.27.4",
+    "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",
     "flv.js": "^1.6.2",
     "js-md5": "^0.8.3",
-    "react": "^16.14.0",
-    "react-app-rewired": "^2.2.1",
-    "react-dom": "^16.14.0",
-    "react-router-dom": "^5.3.4",
-    "react-scripts": "5.0.1",
-    "universal-cookie": "^7.2.0"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router": "^7.9.3",
+    "universal-cookie": "^8.0.1"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.12.1"
+    "@eslint-react/eslint-plugin": "^2.0.6",
+    "@parcel/packager-raw-url": "^2.16.0",
+    "@parcel/transformer-webmanifest": "^2.16.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "buffer": "^6.0.3",
+    "eslint": "^9.37.0",
+    "parcel": "^2.16.0",
+    "process": "^0.11.10",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.45.0"
   },
   "scripts": {
-    "start": "react-app-rewired start",
-    "build": "react-app-rewired build",
-    "test": "react-app-rewired test"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
+    "start": "npx parcel src/index.html",
+    "build": "npx parcel build src/index.html"
   },
   "browserslist": {
     "production": [
