@@ -1,5 +1,5 @@
 import { Descriptions, Spin, Tag } from 'antd';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { api } from '../../api/service';
 import { useFetch } from '../../hooks/useFetch';
 import secondsToDhms from '../../util/secondsToDhms';
@@ -11,7 +11,8 @@ interface StreamDetailsProps {
 }
 
 const StreamDetails = ({ app, stream, ip }: StreamDetailsProps) => {
-    const { data, loading } = useFetch(() => api.getStream(app, stream), {
+    const getStream = useCallback(() => api.getStream(app, stream), [app, stream]);
+    const { data, loading } = useFetch(getStream, {
         immediate: true,
         refreshInterval: 5000,
     });
