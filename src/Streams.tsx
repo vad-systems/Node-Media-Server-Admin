@@ -160,7 +160,7 @@ const Streams = () => {
                                 const now = new Date().getTime();
                                 const connected = new Date(connectCreated).getTime();
 
-                                return secondsToDhmsSimple((connected - now) / 1000);
+                                return secondsToDhmsSimple((now - connected) / 1000);
                             },
                         },
 
