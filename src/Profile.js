@@ -1,5 +1,6 @@
 import React, { Component, Fragment } from 'react';
-import { Card, Icon, Table } from "antd";
+import { Card, Table } from "antd";
+import { HddOutlined } from '@ant-design/icons';
 import { bytesToSize, secondsToDhms } from "./Util";
 
 const columns = [{
@@ -51,7 +52,7 @@ class Profile extends Component {
     render() {
         return (
             <Card title={<Fragment>
-                <Icon type="hdd" />
+                <HddOutlined />
                 <span style={{ paddingLeft: "12px", fontSize: "16px" }}>Server Info</span>
             </Fragment>}>
 

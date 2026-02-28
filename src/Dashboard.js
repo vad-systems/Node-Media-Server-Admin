@@ -1,13 +1,15 @@
 import React, { Component } from 'react';
 import { Card, Row, Col } from 'antd';
 import { bytesToBand } from "./Util";
-import ReactEchartsCore from 'echarts-for-react/lib/core';
-import echarts from 'echarts/lib/echarts';
-import 'echarts/lib/chart/line';
-import 'echarts/lib/component/legend';
-import 'echarts/lib/component/tooltip';
-import 'echarts/lib/component/title';
+import ReactEChartsCore from 'echarts-for-react/lib/core';
+import * as echarts from 'echarts/core';
+import { LineChart } from 'echarts/charts';
+import { TooltipComponent, TitleComponent, LegendComponent, GridComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
 
+echarts.use(
+    [GridComponent, TitleComponent, TooltipComponent, LegendComponent, LineChart, CanvasRenderer]
+);
 
 function getOption(name) {
   return {
@@ -41,7 +43,9 @@ function getOption(name) {
         name: name,
         type: 'line',
         areaStyle: { normal: {} },
-        data: []
+        data: [],
+        xAxisIndex: 0,
+        yAxisIndex: 0,
       },
     ]
   };
@@ -80,17 +84,23 @@ function getConnOption() {
       {
         name: "Rtmp",
         type: 'line',
-        data: []
+        data: [],
+        xAxisIndex: 0,
+        yAxisIndex: 0,
       },
       {
         name: "Http",
         type: 'line',
-        data: []
+        data: [],
+        xAxisIndex: 0,
+        yAxisIndex: 0,
       },
       {
         name: "WebSocket",
         type: 'line',
-        data: []
+        data: [],
+        xAxisIndex: 0,
+        yAxisIndex: 0,
       },
     ]
   };
@@ -155,7 +165,9 @@ function getNetOption() {
       {
         name: 'Input',
         type: 'line',
-        data: []
+        data: [],
+        xAxisIndex: 0,
+        yAxisIndex: 0,
       },
       {
         name: 'Output',
@@ -254,10 +266,10 @@ class Dashboard extends Component {
   render() {
 
     return (
-      <Row style={{ margin: "0 -12px" }}>
-        <Col span={12} style={{ padding: "0 12px" }}>
+      <Row style={{ margin: "0 -12px" }} wrap>
+        <Col span={12} style={{ padding: "0 12px", marginTop: "16px", minWidth: "348px", maxWidth: "100%", flex: "1 1 50%" }}>
           <Card>
-            <ReactEchartsCore
+            <ReactEChartsCore
               echarts={echarts}
               ref='echarts_react'
               option={this.state.conOption}
@@ -266,9 +278,9 @@ class Dashboard extends Component {
           </Card>
 
         </Col>
-        <Col span={12} style={{ padding: "0 12px" }}>
+        <Col span={12} style={{ padding: "0 12px", marginTop: "16px", minWidth: "348px", maxWidth: "100%", flex: "1 1 50%" }}>
           <Card>
-            <ReactEchartsCore
+            <ReactEChartsCore
               echarts={echarts}
               ref='echarts_react'
               option={this.state.netOption}
@@ -277,9 +289,9 @@ class Dashboard extends Component {
           </Card>
         </Col>
 
-        <Col span={12} style={{ padding: "0 12px", marginTop: "16px" }}>
+        <Col span={12} style={{ padding: "0 12px", marginTop: "16px", minWidth: "348px", maxWidth: "100%", flex: "1 1 50%" }}>
           <Card>
-            <ReactEchartsCore
+            <ReactEChartsCore
               echarts={echarts}
               ref='echarts_react'
               option={this.state.cpuOption}
@@ -287,9 +299,9 @@ class Dashboard extends Component {
             />
           </Card>
         </Col>
-        <Col span={12} style={{ padding: "0 12px", marginTop: "16px" }}>
+        <Col span={12} style={{ padding: "0 12px", marginTop: "16px", minWidth: "348px", maxWidth: "100%", flex: "1 1 50%" }}>
           <Card>
-            <ReactEchartsCore
+            <ReactEChartsCore
               echarts={echarts}
               ref='echarts_react'
               option={this.state.memOption}

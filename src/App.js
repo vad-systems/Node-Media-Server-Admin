@@ -1,6 +1,13 @@
 import React, { Component } from 'react';
 import { BrowserRouter as Router, Link, Route } from "react-router-dom";
-import { Icon, Layout, Menu } from 'antd';
+import { Layout, Menu } from 'antd';
+import {
+    DashboardOutlined,
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
+    ProfileOutlined,
+    VideoCameraOutlined
+} from '@ant-design/icons';
 import { createBrowserHistory } from 'history';
 import Dashboard from "./Dashboard";
 import Profile from "./Profile";
@@ -51,19 +58,19 @@ class App extends Component {
                         >
                             <Menu.Item key="/admin/">
                                 <Link to="/admin/">
-                                    <Icon type="dashboard" />
+                                    <DashboardOutlined />
                                     <span>Dashboard</span>
                                 </Link>
                             </Menu.Item>
                             <Menu.Item key="/admin/streams">
                                 <Link to="/admin/streams">
-                                    <Icon type="video-camera" />
+                                    <VideoCameraOutlined />
                                     <span>Streams</span>
                                 </Link>
                             </Menu.Item>
                             <Menu.Item key="/admin/profile">
                                 <Link to="/admin/profile">
-                                    <Icon type="profile" />
+                                    <ProfileOutlined />
                                     <span>Profile</span>
                                 </Link>
                             </Menu.Item>
@@ -71,14 +78,14 @@ class App extends Component {
                     </Sider>
                     <Layout>
                         <Header style={{ background: '#fff', padding: 0 }}>
-                            <Icon
-                                className="trigger"
-                                type={this.state.collapsed ? 'menu-unfold' : 'menu-fold'}
-                                onClick={this.toggle}
-                            />
+                            {
+                                this.state.collapsed
+                                  ? <MenuUnfoldOutlined className={"trigger"} onClick={this.toggle} />
+                                  : <MenuFoldOutlined className="trigger" onClick={this.toggle} />
+                            }
                         </Header>
                         <Content style={{
-                            margin: '24px 16px', minHeight: 280,
+                            margin: '24px 16px', minHeight: 280, overflowX: 'auto',
                         }}>
                             <Route exact path="/admin" component={Dashboard} />
                             <Route path="/admin/streams" component={Streams} />
