@@ -181,7 +181,7 @@ const Dashboard = () => {
                     _memOption.uptime = now;
                     _memOption.xAxis[0].data.push(axisData);
                     _memOption.series[0].data.push((
-                        100 - 100 * data.mem.free / data.mem.totle
+                        100 - 100 * data.mem.free / data.mem.total
                     ).toFixed(2));
 
                     _conOption.uptime = now;

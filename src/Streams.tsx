@@ -1,7 +1,7 @@
 import { DeleteOutlined, LockOutlined } from '@ant-design/icons';
 import { Card, Input, Modal, Table } from 'antd';
 import { md5 } from 'js-md5';
-import React, { ChangeEventHandler, Fragment, useCallback, useMemo, useState } from 'react';
+import React, { ChangeEventHandler, Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Cookies from 'universal-cookie';
 import { useInterval } from 'usehooks-ts';
 import Flvplayer from './FlvPlayer.js';
@@ -93,6 +93,9 @@ const Streams = () => {
             });
     }, []);
 
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
     useInterval(fetchData, 2000);
 
     const updatePass = useCallback<ChangeEventHandler<HTMLInputElement>>(({ target }) => {
@@ -130,8 +133,8 @@ const Streams = () => {
         modal.info({
             icon: null,
             title: `Clients /${record.app}/${record.name}`,
-            width: 640,
-            height: 480,
+            width: 800,
+            height: 640,
             content: (
                 <Table
                     dataSource={record.clients}

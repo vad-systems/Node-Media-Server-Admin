@@ -40,7 +40,7 @@ const Profile = () => {
                     value: data.os.arch + '_' + data.os.platform + '_' + data.os.release,
                 };
                 let cpuInfo = { key: 1, name: 'CPU', value: data.cpu.num + ' x ' + data.cpu.model };
-                let memInfo = { key: 2, name: 'Memory', value: bytesToSize(data.mem.totle) };
+                let memInfo = { key: 2, name: 'Memory', value: bytesToSize(data.mem.total) };
                 let nodeInfo = { key: 3, name: 'Node.js', value: data.nodejs.version };
                 let uptimeInfo = { key: 4, name: 'Uptime', value: secondsToDhms(data.nodejs.uptime) };
                 let versionInfo = { key: 5, name: 'Node Media Server Version', value: data.version };
