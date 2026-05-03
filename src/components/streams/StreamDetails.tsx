@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { api } from '../../api/service';
 import { useFetch } from '../../hooks/useFetch';
 import secondsToDhms from '../../util/secondsToDhms';
+import bitrateToSize from '../../util/bitrateToSize';
 
 interface StreamDetailsProps {
     app: string;
@@ -29,7 +30,7 @@ const StreamDetails = ({ app, stream, ip }: StreamDetailsProps) => {
             <Descriptions.Item label="Live">{data.isLive ? <Tag color="success">YES</Tag> : <Tag color="error">NO</Tag>}</Descriptions.Item>
             <Descriptions.Item label="Viewers">{data.viewers}</Descriptions.Item>
             <Descriptions.Item label="Duration">{secondsToDhms(data.duration)}</Descriptions.Item>
-            <Descriptions.Item label="Bitrate">{data.bitrate} kbps</Descriptions.Item>
+            <Descriptions.Item label="Bitrate">{bitrateToSize(data.bitrate)}</Descriptions.Item>
             <Descriptions.Item label="Start Time">{data.startTime ? new Date(data.startTime).toLocaleString() : 'N/A'}</Descriptions.Item>
             <Descriptions.Item label="Arguments">
                 <pre style={{ fontSize: '10px', margin: 0 }}>{JSON.stringify(data.arguments, null, 2)}</pre>

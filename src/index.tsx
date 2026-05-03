@@ -4,7 +4,7 @@ import './index.css';
 import App from './App';
 import { StatsProvider } from './context/StatsContext';
 
-// Register Service Worker for background stats
+// Register Service Worker for lifecycle management (stats polling moved to StatsContext)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register(new URL('./sw.ts', import.meta.url), {
