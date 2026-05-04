@@ -1,5 +1,7 @@
 import FlvJs from 'flv.js';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import { CameraOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Space, Tooltip } from 'antd';
 import MediaSegment = FlvJs.MediaSegment;
 
 type MediaType = 'flv' | 'mp4';
@@ -31,10 +33,16 @@ const FlvPlayer = (props: FlvPlayerProps) => {
 
         if ($video) {
             if (FlvJs.isSupported()) {
-                flvPlayer = FlvJs.createPlayer({ ...playerProps }, playerProps.config);
+                flvPlayer = FlvJs.createPlayer({ ...playerProps }, {
+                    ...playerProps.config,
+                    enableWorker: true,
+                    stashInitialSize: 128,
+                });
                 flvPlayer.attachMediaElement($video);
                 flvPlayer.load();
-                flvPlayer.play();
+                flvPlayer.play()?.catch(() => {
+                    // Auto-play might be blocked, it's fine
+                });
                 setFlvPlayer(flvPlayer);
             }
         }
@@ -46,22 +54,76 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                 flvPlayer.destroy();
             }
         };
-    }, [props]);
+    }, [playerProps]);
+
+    const handleReload = () => {
+        if (flvPlayer) {
+            flvPlayer.unload();
+            flvPlayer.load();
+            flvPlayer.play();
+        }
+    };
+
+    const takeScreenshot = () => {
+        if (videoRef.current) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            const link = document.createElement('a');
+            link.download = `snapshot-${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    };
 
     useEffect(() => {
         if (videoRef.current) {
             return initFlv(videoRef.current);
         }
-    }, [videoRef.current, initFlv]);
+    }, [initFlv]);
 
     return (
-        <video
-            className={className}
-            style={Object.assign({
-                width: '100%',
-            }, style)}
-            ref={videoRef}
-        />
+        <div className={className} style={Object.assign({ position: 'relative', width: '100%', backgroundColor: '#000' }, style)}>
+            <video
+                controls
+                autoPlay
+                muted
+                style={{
+                    width: '100%',
+                    display: 'block',
+                }}
+                ref={videoRef}
+            />
+            <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                zIndex: 10,
+            }}>
+                <Space>
+                    <Tooltip title="Reload Player">
+                        <Button 
+                            size="small" 
+                            shape="circle" 
+                            icon={<ReloadOutlined />} 
+                            onClick={handleReload}
+                            ghost
+                        />
+                    </Tooltip>
+                    <Tooltip title="Take Snapshot">
+                        <Button 
+                            size="small" 
+                            shape="circle" 
+                            icon={<CameraOutlined />} 
+                            onClick={takeScreenshot}
+                            ghost
+                        />
+                    </Tooltip>
+                </Space>
+            </div>
+        </div>
     );
 };
 

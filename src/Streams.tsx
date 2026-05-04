@@ -133,8 +133,7 @@ const Streams = () => {
         if (grouping === 'prefix') {
             const groups: Record<string, StreamData[]> = {};
             sorted.forEach(s => {
-                const lastUnderscore = s.name.lastIndexOf('_');
-                const prefix = lastUnderscore !== -1 ? s.name.substring(0, lastUnderscore) : s.name;
+                const prefix = s.name.replace(/_[0-9]+$/, '');
                 if (!groups[prefix]) groups[prefix] = [];
                 groups[prefix].push(s);
             });
@@ -199,7 +198,7 @@ const Streams = () => {
                 onCancel={closeModal}
                 footer={null}
                 width={modalType === 'clients' ? 800 : 500}
-                destroyOnClose
+                destroyOnHidden
             >
                 {modalType === 'clients' && currentViewingStream && (
                     <ClientTable clients={currentViewingStream.clients} />

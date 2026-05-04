@@ -1,9 +1,10 @@
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import { Layout, App as AntApp, Flex, Typography } from 'antd';
+import { BulbOutlined, BulbFilled, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { Layout, App as AntApp, Flex, Typography, ConfigProvider, theme, Switch, Space, Select } from 'antd';
 import React, { useCallback } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router';
 import { useLocalStorage } from 'usehooks-ts';
 import pkg from '../package.json';
+import { useTranslation } from './context/LanguageContext';
 import AppMenu from './AppMenu';
 import Config from './Config';
 import Dashboard from './Dashboard';
@@ -15,38 +16,65 @@ import './App.css';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Text } = Typography;
+const { defaultAlgorithm, darkAlgorithm } = theme;
 
 const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
     const [collapsed, setCollapsed] = useLocalStorage('nms.admin.menu.collapsed', false);
+    const [isDarkMode, setIsDarkMode] = useLocalStorage('nms.admin.theme.dark', false);
+    const { locale, setLocale, t } = useTranslation();
 
     const toggle = useCallback(() => {
         setCollapsed(!collapsed);
     }, [collapsed]);
+
+    const toggleTheme = useCallback((checked: boolean) => {
+        setIsDarkMode(checked);
+    }, [setIsDarkMode]);
+
     return (
         <Router>
-            <AntApp>
+            <ConfigProvider theme={{ algorithm: isDarkMode ? darkAlgorithm : defaultAlgorithm }}>
+                <AntApp>
                 <Layout style={{ minHeight: '100vh' }}>
                     <Sider
-                    width={256}
-                    trigger={null}
-                    collapsible
-                    collapsed={collapsed}
-                    breakpoint="lg"
-                    onCollapse={(c) => setCollapsed(c)}
-                >
-
-                    <div className="logo"><h1>{collapsed ? shortTitle : title}</h1></div>
-
-                    <AppMenu />
-                </Sider>
-                <Layout>
-                    <Header style={{ background: '#fff', padding: 0 }}>
-                        {
-                            collapsed
-                                ? <MenuUnfoldOutlined className={'trigger'} onClick={toggle} />
-                                : <MenuFoldOutlined className={'trigger'} onClick={toggle} />
-                        }
-                    </Header>
+                        width={256}
+                        trigger={null}
+                        collapsible
+                        collapsed={collapsed}
+                        breakpoint="lg"
+                        onCollapse={(c) => setCollapsed(c)}
+                    >
+                        <div className="logo"><h1>{collapsed ? shortTitle : title}</h1></div>
+                        <AppMenu />
+                    </Sider>
+                    <Layout>
+                        <Header style={{ background: isDarkMode ? '#141414' : '#fff', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                                {
+                                    collapsed
+                                        ? <MenuUnfoldOutlined className={'trigger'} onClick={toggle} />
+                                        : <MenuFoldOutlined className={'trigger'} onClick={toggle} />
+                                }
+                            </div>
+                            <Space size="large">
+                                <Select
+                                    value={locale}
+                                    onChange={(val) => setLocale(val as any)}
+                                    options={[
+                                        { value: 'en', label: 'English' },
+                                        { value: 'de', label: 'Deutsch' },
+                                    ]}
+                                    size="middle"
+                                    variant="borderless"
+                                />
+                                <Switch
+                                    checkedChildren={<BulbFilled />}
+                                    unCheckedChildren={<BulbOutlined />}
+                                    checked={isDarkMode}
+                                    onChange={toggleTheme}
+                                />
+                            </Space>
+                        </Header>
                     <Content
                         style={{
                             margin: '24px 16px', minHeight: 280, overflowX: 'auto',
@@ -77,10 +105,11 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                         >Node-Media-Server v2</a>
                         </Flex>
                     </Footer>
-                </Layout>
-            </Layout>
-        </AntApp>
-    </Router>
+                    </Layout>
+                    </Layout>
+                </AntApp>
+            </ConfigProvider>
+        </Router>
     );
 };
 

@@ -2,40 +2,42 @@ import { CarryOutOutlined, DashboardOutlined, ProfileOutlined, SettingOutlined, 
 import { Menu } from 'antd';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { useTranslation } from './context/LanguageContext';
 
 const AppMenu = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t } = useTranslation();
 
     const menuItems = [
         {
             key: '/admin',
-            label: 'Dashboard',
+            label: t('dashboard'),
             onClick: () => navigate('/admin', { replace: true }),
             icon: <DashboardOutlined />,
         },
         {
             key: '/admin/streams',
-            label: 'Streams',
+            label: t('streams'),
             onClick: () => navigate('/admin/streams', { replace: true }),
             icon: <VideoCameraOutlined />,
         },
         {
             key: '/admin/tasks',
-            label: 'Services & Tasks',
+            label: t('tasks'),
             onClick: () => navigate('/admin/tasks', { replace: true }),
             icon: <CarryOutOutlined />,
         },
         {
             key: '/admin/profile',
             onClick: () => navigate('/admin/profile', { replace: true }),
-            label: 'Profile',
+            label: t('profile'),
             icon: <ProfileOutlined />,
         },
         {
             key: '/admin/config',
             onClick: () => navigate('/admin/config', { replace: true }),
-            label: 'Config',
+            label: t('config'),
             icon: <SettingOutlined />,
         },
     ];

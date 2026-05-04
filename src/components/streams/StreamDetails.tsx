@@ -4,6 +4,7 @@ import { api } from '../../api/service';
 import { useFetch } from '../../hooks/useFetch';
 import secondsToDhms from '../../util/secondsToDhms';
 import bitrateToSize from '../../util/bitrateToSize';
+import { useTranslation } from '../../context/LanguageContext';
 
 interface StreamDetailsProps {
     app: string;
@@ -12,6 +13,7 @@ interface StreamDetailsProps {
 }
 
 const StreamDetails = ({ app, stream, ip }: StreamDetailsProps) => {
+    const { t } = useTranslation();
     const getStream = useCallback(() => api.getStream(app, stream), [app, stream]);
     const { data, loading } = useFetch(getStream, {
         immediate: true,
@@ -22,17 +24,17 @@ const StreamDetails = ({ app, stream, ip }: StreamDetailsProps) => {
         return <Spin size="small" style={{ margin: '20px auto', display: 'block' }} />;
     }
 
-    if (!data) return <div>No data found for this stream.</div>;
+    if (!data) return <div>{t('no_data')}</div>;
 
     return (
         <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="IP">{ip || 'N/A'}</Descriptions.Item>
-            <Descriptions.Item label="Live">{data.isLive ? <Tag color="success">YES</Tag> : <Tag color="error">NO</Tag>}</Descriptions.Item>
-            <Descriptions.Item label="Viewers">{data.viewers}</Descriptions.Item>
-            <Descriptions.Item label="Duration">{secondsToDhms(data.duration)}</Descriptions.Item>
-            <Descriptions.Item label="Bitrate">{bitrateToSize(data.bitrate)}</Descriptions.Item>
-            <Descriptions.Item label="Start Time">{data.startTime ? new Date(data.startTime).toLocaleString() : 'N/A'}</Descriptions.Item>
-            <Descriptions.Item label="Arguments">
+            <Descriptions.Item label={t('live')}>{data.isLive ? <Tag color="success">{t('yes')}</Tag> : <Tag color="error">{t('no')}</Tag>}</Descriptions.Item>
+            <Descriptions.Item label={t('viewers')}>{data.viewers}</Descriptions.Item>
+            <Descriptions.Item label={t('duration')}>{secondsToDhms(data.duration)}</Descriptions.Item>
+            <Descriptions.Item label={t('bitrate')}>{bitrateToSize(data.bitrate)}</Descriptions.Item>
+            <Descriptions.Item label={t('start_time')}>{data.startTime ? new Date(data.startTime).toLocaleString() : 'N/A'}</Descriptions.Item>
+            <Descriptions.Item label={t('arguments')}>
                 <pre style={{ fontSize: '10px', margin: 0 }}>{JSON.stringify(data.arguments, null, 2)}</pre>
             </Descriptions.Item>
         </Descriptions>

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { StatsProvider } from './context/StatsContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 // Register Service Worker for lifecycle management (stats polling moved to StatsContext)
 if ('serviceWorker' in navigator) {
@@ -20,8 +21,10 @@ if ('serviceWorker' in navigator) {
 const root = createRoot(document.getElementById('root')!);
 root.render(
     <React.StrictMode>
-        <StatsProvider>
-            <App />
-        </StatsProvider>
+        <LanguageProvider>
+            <StatsProvider>
+                <App />
+            </StatsProvider>
+        </LanguageProvider>
     </React.StrictMode>,
 );
