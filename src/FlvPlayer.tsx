@@ -1,7 +1,7 @@
-import FlvJs from 'flv.js';
-import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { CameraOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Button, Space, Tooltip } from 'antd';
+import FlvJs from 'flv.js';
+import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import MediaSegment = FlvJs.MediaSegment;
 
 type MediaType = 'flv' | 'mp4';
@@ -33,11 +33,7 @@ const FlvPlayer = (props: FlvPlayerProps) => {
 
         if ($video) {
             if (FlvJs.isSupported()) {
-                flvPlayer = FlvJs.createPlayer({ ...playerProps }, {
-                    ...playerProps.config,
-                    enableWorker: true,
-                    stashInitialSize: 128,
-                });
+                flvPlayer = FlvJs.createPlayer({ ...playerProps }, playerProps.config);
                 flvPlayer.attachMediaElement($video);
                 flvPlayer.load();
                 flvPlayer.play()?.catch(() => {
@@ -54,7 +50,7 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                 flvPlayer.destroy();
             }
         };
-    }, [playerProps]);
+    }, [props]);
 
     const handleReload = () => {
         if (flvPlayer) {
@@ -85,7 +81,10 @@ const FlvPlayer = (props: FlvPlayerProps) => {
     }, [initFlv]);
 
     return (
-        <div className={className} style={Object.assign({ position: 'relative', width: '100%', backgroundColor: '#000' }, style)}>
+        <div
+            className={className}
+            style={Object.assign({ position: 'relative', width: '100%', backgroundColor: '#000' }, style)}
+        >
             <video
                 controls
                 autoPlay
@@ -96,27 +95,29 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                 }}
                 ref={videoRef}
             />
-            <div style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                zIndex: 10,
-            }}>
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    zIndex: 10,
+                }}
+            >
                 <Space>
                     <Tooltip title="Reload Player">
-                        <Button 
-                            size="small" 
-                            shape="circle" 
-                            icon={<ReloadOutlined />} 
+                        <Button
+                            size="small"
+                            shape="circle"
+                            icon={<ReloadOutlined />}
                             onClick={handleReload}
                             ghost
                         />
                     </Tooltip>
                     <Tooltip title="Take Snapshot">
-                        <Button 
-                            size="small" 
-                            shape="circle" 
-                            icon={<CameraOutlined />} 
+                        <Button
+                            size="small"
+                            shape="circle"
+                            icon={<CameraOutlined />}
                             onClick={takeScreenshot}
                             ghost
                         />

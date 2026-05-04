@@ -5,7 +5,7 @@ import React, { ChangeEventHandler, Fragment, useCallback, useState, useMemo } f
 import Cookies from 'universal-cookie';
 import { api } from './api/service';
 import { StreamStats } from './api/types.js';
-import Flvplayer from './FlvPlayer';
+import FlvPlayer from './FlvPlayer';
 import ClientTable from './components/streams/ClientTable';
 import StreamDetails from './components/streams/StreamDetails';
 import StreamTable from './components/streams/StreamTable';
@@ -64,7 +64,7 @@ const Streams = () => {
             title: 'Video Player',
             width: 640,
             height: 480,
-            content: <Flvplayer
+            content: <FlvPlayer
                 url={`/${record.app}/${record.name}.flv${sign}`}
                 type="flv"
             />,
