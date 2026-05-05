@@ -97,7 +97,7 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
                             >Node-Media-Server</a>
                             <Text type="secondary">Admin {pkg.version}</Text>
                             <Text type="secondary">|</Text>
-                            <Text type="secondary">based on</Text>
+                            <Text type="secondary">{t('based_on')}</Text>
                             <a
                             href={'https://github.com/illuspas/Node-Media-Server/tree/v2'}
                             target={'_blank'}

@@ -15,17 +15,19 @@ import { App, Card, Col, Flex, Row, Switch, Form, InputNumber, Input, Button, Sk
 import React, { useCallback, useEffect } from 'react';
 import { api } from './api/service';
 import { Config as ConfigType } from './api/types';
+import { useTranslation } from './context/LanguageContext';
 import { useFetch } from './hooks/useFetch';
 
 const { Text } = Typography;
 
 const Config = () => {
     const { message } = App.useApp();
+    const { t } = useTranslation();
     const [form] = Form.useForm();
 
     const onError = useCallback(async (e: Error) => {
-        await message.error(`Failed to fetch config: ${e.message}`);
-    }, [message]);
+        await message.error(`${t('failed_fetch_config')}: ${e.message}`);
+    }, [message, t]);
 
     const { data: config, loading, refetch } = useFetch(api.getConfig, {
         immediate: true,
@@ -97,12 +99,12 @@ const Config = () => {
             }
 
             await api.updateConfig(patch);
-            message.success('Configuration updated successfully');
+            message.success(t('config_updated'));
             refetch();
         } catch (e: any) {
-            message.error(`Update failed: ${e.message}`);
+            message.error(`${t('config_failed')}: ${e.message}`);
         }
-    }, [api, message, refetch]);
+    }, [api, message, refetch, t]);
 
     if (loading && !config) {
         return (
@@ -129,8 +131,8 @@ const Config = () => {
             <Row gutter={[16, 16]}>
                 <Col span={24}>
                     <Alert
-                        message="Config Editing Disabled"
-                        description="Direct configuration editing via the UI is currently disabled for security reasons and to address known bugs. Please use the server's configuration file for any changes."
+                        message={t('config_editing_disabled')}
+                        description={t('config_editing_disabled_desc')}
                         type="warning"
                         showIcon
                         style={{ marginBottom: 16 }}
@@ -138,32 +140,105 @@ const Config = () => {
                 </Col>
                 <Col span={24}>
                     <Card 
-                        title={<Flex align="center" gap="small"><SettingOutlined /><span>HTTP/S Configuration</span></Flex>}
-                        extra={<Button type="primary" icon={<SaveOutlined />} htmlType="submit" disabled>Save Changes</Button>}
+                        title={<Flex align="center" gap="small"><SettingOutlined /><span>{t('http_s_config')}</span></Flex>}
+                        extra={<Button type="primary" icon={<SaveOutlined />} htmlType="submit" disabled>{t('save_changes')}</Button>}
                     >
                         <Row gutter={16}>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['http', 'port']} label="HTTP Port">
+                                <Form.Item name={['http', 'port']} label={t('port') + ' (HTTP)'}>
                                     <InputNumber style={{ width: '100%' }} />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['https', 'port']} label="HTTPS Port">
+                                <Form.Item name={['https', 'port']} label={t('port') + ' (HTTPS)'}>
                                     <InputNumber style={{ width: '100%' }} />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['http', 'allow_origin']} label="Allow Origin">
+                                <Form.Item name={['http', 'allow_origin']} label={t('allow_origin')}>
                                     <Input />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['http', 'api']} label="Enable API" valuePropName="checked">
+                                <Form.Item name={['http', 'api']} label={t('enable_api')} valuePropName="checked">
                                     <Switch />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['http', 'webroot']} label={t('web_root')}>
+                                    <Input />
                                 </Form.Item>
                             </Col>
                             <Col span={24}>
-                                <Form.Item name={['http', 'mediaroot']} label="Media Root">
+                                <Form.Item name={['http', 'mediaroot']} label={t('media_root')}>
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        <Divider orientation="left">{t('https_config')}</Divider>
+                        <Row gutter={16}>
+                            <Col xs={24} sm={12} md={8}>
+                                <Form.Item name={['https', 'key']} label={t('ssl_key_path')}>
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={8}>
+                                <Form.Item name={['https', 'cert']} label={t('ssl_cert_path')}>
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={8}>
+                                <Form.Item name={['https', 'passphrase']} label={t('ssl_passphrase')}>
+                                    <Input.Password />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </Card>
+                </Col>
+
+                <Col span={24}>
+                    <Card title={<Flex align="center" gap="small"><CloudUploadOutlined /><span>{t('rtmp_config')}</span></Flex>}>
+                        <Row gutter={16}>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'port']} label={t('port')}>
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'chunk_size']} label={t('chunk_size')}>
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'ping']} label={t('ping_interval')}>
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'ping_timeout']} label={t('ping_timeout')}>
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'gop_cache']} label={t('gop_cache')} valuePropName="checked">
+                                    <Switch />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        <Divider orientation="left">{t('rtmp_config')} SSL</Divider>
+                        <Row gutter={16}>
+                            <Col xs={24} sm={12} md={6}>
+                                <Form.Item name={['rtmp', 'ssl', 'port']} label={t('ssl_port')}>
+                                    <InputNumber style={{ width: '100%' }} />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={9}>
+                                <Form.Item name={['rtmp', 'ssl', 'key']} label={t('ssl_key_path')}>
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12} md={9}>
+                                <Form.Item name={['rtmp', 'ssl', 'cert']} label={t('ssl_cert_path')}>
                                     <Input />
                                 </Form.Item>
                             </Col>
@@ -172,67 +247,35 @@ const Config = () => {
                 </Col>
 
                 <Col span={24}>
-                    <Card title={<Flex align="center" gap="small"><CloudUploadOutlined /><span>RTMP Configuration</span></Flex>}>
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'port']} label="RTMP Port">
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'chunk_size']} label="Chunk Size">
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'ping']} label="Ping Interval">
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'ping_timeout']} label="Ping Timeout">
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'gop_cache']} label="GOP Cache" valuePropName="checked">
-                                    <Switch />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Card>
-                </Col>
-
-                <Col span={24}>
-                    <Card title={<Flex align="center" gap="small"><LockOutlined /><span>Authentication</span></Flex>}>
+                    <Card title={<Flex align="center" gap="small"><LockOutlined /><span>{t('auth_config')}</span></Flex>}>
                         <Row gutter={16}>
                             <Col xs={24} sm={12} md={4}>
-                                <Form.Item name={['auth', 'api']} label="API Auth" valuePropName="checked">
+                                <Form.Item name={['auth', 'api']} label={t('api_auth')} valuePropName="checked">
                                     <Switch />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['auth', 'api_user']} label="API User">
+                                <Form.Item name={['auth', 'api_user']} label={t('api_user')}>
                                     <Input />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['auth', 'api_pass']} label="API Password">
+                                <Form.Item name={['auth', 'api_pass']} label={t('api_pass')}>
                                     <Input.Password />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={4}>
-                                <Form.Item name={['auth', 'play']} label="Play Auth" valuePropName="checked">
+                                <Form.Item name={['auth', 'play']} label={t('play_auth')} valuePropName="checked">
                                     <Switch />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={4}>
-                                <Form.Item name={['auth', 'publish']} label="Publish Auth" valuePropName="checked">
+                                <Form.Item name={['auth', 'publish']} label={t('publish_auth')} valuePropName="checked">
                                     <Switch />
                                 </Form.Item>
                             </Col>
                             <Col span={24}>
-                                <Form.Item name={['auth', 'secret']} label="Secret Key">
+                                <Form.Item name={['auth', 'secret']} label={t('secret_key')}>
                                     <Input />
                                 </Form.Item>
                             </Col>
@@ -241,53 +284,53 @@ const Config = () => {
                 </Col>
 
                 <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><PartitionOutlined /><span>Transcoding</span></Flex>}>
-                        <Form.Item name={['trans', 'ffmpeg']} label="FFmpeg Path">
+                    <Card title={<Flex align="center" gap="small"><PartitionOutlined /><span>{t('component_trans')}</span></Flex>}>
+                        <Form.Item name={['trans', 'ffmpeg']} label={t('ffmpeg_path')}>
                             <Input />
                         </Form.Item>
-                        <Form.Item name={['trans', 'tasks']} label="Tasks (JSON)">
+                        <Form.Item name={['trans', 'tasks']} label={t('tasks_json')}>
                             <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
                         </Form.Item>
                     </Card>
                 </Col>
                 <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><NodeIndexOutlined /><span>Relay</span></Flex>}>
-                        <Form.Item name={['relay', 'ffmpeg']} label="FFmpeg Path">
+                    <Card title={<Flex align="center" gap="small"><NodeIndexOutlined /><span>{t('component_relay')}</span></Flex>}>
+                        <Form.Item name={['relay', 'ffmpeg']} label={t('ffmpeg_path')}>
                             <Input />
                         </Form.Item>
-                        <Form.Item name={['relay', 'tasks']} label="Tasks (JSON)">
+                        <Form.Item name={['relay', 'tasks']} label={t('tasks_json')}>
                             <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
                         </Form.Item>
                     </Card>
                 </Col>
                 <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><InteractionOutlined /><span>Fission</span></Flex>}>
-                        <Form.Item name={['fission', 'ffmpeg']} label="FFmpeg Path">
+                    <Card title={<Flex align="center" gap="small"><InteractionOutlined /><span>{t('component_fission')}</span></Flex>}>
+                        <Form.Item name={['fission', 'ffmpeg']} label={t('ffmpeg_path')}>
                             <Input />
                         </Form.Item>
-                        <Form.Item name={['fission', 'tasks']} label="Tasks (JSON)">
+                        <Form.Item name={['fission', 'tasks']} label={t('tasks_json')}>
                             <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
                         </Form.Item>
                     </Card>
                 </Col>
                 <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><SwapOutlined /><span>Switch</span></Flex>}>
-                        <Form.Item name={['switch', 'tasks']} label="Tasks (JSON)">
+                    <Card title={<Flex align="center" gap="small"><SwapOutlined /><span>{t('component_switch')}</span></Flex>}>
+                        <Form.Item name={['switch', 'tasks']} label={t('tasks_json')}>
                             <Input.TextArea rows={12} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
                         </Form.Item>
                     </Card>
                 </Col>
 
                 <Col span={24}>
-                    <Card title={<Flex align="center" gap="small"><FileTextOutlined /><span>Logging</span></Flex>}>
+                    <Card title={<Flex align="center" gap="small"><FileTextOutlined /><span>{t('logging_config')}</span></Flex>}>
                         <Row gutter={16}>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name="logType" label="Log Type">
+                                <Form.Item name="logType" label={t('log_type')}>
                                     <InputNumber style={{ width: '100%' }} />
                                 </Form.Item>
                             </Col>
                             <Col xs={24} sm={12} md={6}>
-                                <Form.Item name="rollingLogLength" label="Rolling Log Length">
+                                <Form.Item name="rollingLogLength" label={t('log_length')}>
                                     <InputNumber style={{ width: '100%' }} />
                                 </Form.Item>
                             </Col>

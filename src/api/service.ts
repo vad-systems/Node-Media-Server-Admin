@@ -1,16 +1,4 @@
-import {
-    Config,
-    FissionStats,
-    RelayInfo,
-    RelayStats,
-    ServerInfo,
-    ServerStatus,
-    SingleStreamInfo,
-    StreamStats,
-    SwitchRequest,
-    SwitchStats,
-    TransStats
-} from './types';
+import { Config, FissionStats, RelayInfo, RelayStats, ServerInfo, ServerStatus, SingleStreamInfo, StreamStats, SwitchRequest, SwitchStats, TransStats } from './types';
 
 const API_BASE_URL = process.env.API_BASE_URL || '';
 
@@ -59,15 +47,18 @@ export const api = {
 
     getFissionTasks: () => request<FissionStats>('/api/fission'),
     deleteFissionTask: (id: string) => request<void>(`/api/fission/${id}`, { method: 'DELETE' }),
+    restartFissionTask: (id: string) => request<void>(`/api/fission/restart/${id}`, { method: 'POST' }),
 
     getRelayTasks: () => request<RelayStats>('/api/relay'),
     getRelayTask: (id: string) => request<RelayInfo[]>(`/api/relay/${id}`),
     deleteRelayTask: (id: string) => request<void>(`/api/relay/${id}`, { method: 'DELETE' }),
+    restartRelayTask: (id: string) => request<void>(`/api/relay/restart/${id}`, { method: 'POST' }),
     getRelayTasksByStream: (app: string, name: string) =>
         request<RelayInfo[]>(`/api/relay/${app}/${name}`),
 
     getTransTasks: () => request<TransStats>('/api/trans'),
     deleteTransTask: (id: string) => request<void>(`/api/trans/${id}`, { method: 'DELETE' }),
+    restartTransTask: (id: string) => request<void>(`/api/trans/restart/${id}`, { method: 'POST' }),
 
     getSwitchTasks: () => request<SwitchStats>('/api/switch'),
     triggerSwitch: (data: SwitchRequest) => request<{ status: string }>('/api/switch', {

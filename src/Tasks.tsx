@@ -4,6 +4,7 @@ import React, { useCallback, useMemo } from 'react';
 import { api } from './api/service';
 import { FissionStats, RelayInfo, ServerStatus, TransStats, SwitchTaskStatus } from './api/types';
 import { useFetch } from './hooks/useFetch';
+import { useTranslation } from './context/LanguageContext';
 import secondsToDhms from './util/secondsToDhms';
 
 const { Title } = Typography;
@@ -13,40 +14,61 @@ type TransTask = TransStats[string][string]['trans'][number];
 
 const Tasks = () => {
     const { message } = App.useApp();
+    const { t } = useTranslation();
 
     const onError = useCallback(async (e: Error) => {
-        await message.error(`Failed to fetch tasks: ${e.message}`);
-    }, [message]);
-
-    const { data: relayData, loading: relayLoading, refetch: refetchRelay } = useFetch(api.getRelayTasks, {
-        immediate: true,
-        refreshInterval: 5000,
-        onError,
-    });
-
-    const { data: transData, loading: transLoading, refetch: refetchTrans } = useFetch(api.getTransTasks, {
-        immediate: true,
-        refreshInterval: 5000,
-        onError,
-    });
-
-    const { data: fissionData, loading: fissionLoading, refetch: refetchFission } = useFetch(api.getFissionTasks, {
-        immediate: true,
-        refreshInterval: 5000,
-        onError,
-    });
-    
-    const { data: switchData, loading: switchLoading, refetch: refetchSwitch } = useFetch(api.getSwitchTasks, {
-        immediate: true,
-        refreshInterval: 5000,
-        onError,
-    });
+        await message.error(`${t('failed_fetch_tasks')}: ${e.message}`);
+    }, [message, t]);
 
     const { data: serverStatus, loading: statusLoading, refetch: refetchStatus } = useFetch(api.getServerStatus, {
         immediate: true,
         refreshInterval: 5000,
         onError,
     });
+
+    const { data: relayData, loading: relayLoading, refetch: refetchRelay } = useFetch(api.getRelayTasks, {
+        immediate: true,
+        refreshInterval: 5000,
+        onError,
+        enabled: !!serverStatus?.relay?.running,
+    });
+
+    const { data: transData, loading: transLoading, refetch: refetchTrans } = useFetch(api.getTransTasks, {
+        immediate: true,
+        refreshInterval: 5000,
+        onError,
+        enabled: !!serverStatus?.trans?.running,
+    });
+
+    const { data: fissionData, loading: fissionLoading, refetch: refetchFission } = useFetch(api.getFissionTasks, {
+        immediate: true,
+        refreshInterval: 5000,
+        onError,
+        enabled: !!serverStatus?.fission?.running,
+    });
+    
+    const { data: switchData, loading: switchLoading, refetch: refetchSwitch } = useFetch(api.getSwitchTasks, {
+        immediate: true,
+        refreshInterval: 5000,
+        onError,
+        enabled: !!serverStatus?.switch?.running,
+    });
+
+    const { data: streamsData } = useFetch(api.getStreams, {
+        immediate: true,
+        refreshInterval: 5000,
+    });
+
+    const allStreamPaths = useMemo(() => {
+        if (!streamsData) return [];
+        const paths: string[] = [];
+        Object.entries(streamsData).forEach(([app, streams]) => {
+            Object.keys(streams).forEach(name => {
+                paths.push(`${app}/${name}`);
+            });
+        });
+        return Array.from(new Set(paths));
+    }, [streamsData]);
 
     const handleAction = useCallback(async (
         server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch',
@@ -55,60 +77,75 @@ const Tasks = () => {
         try {
             if (action === 'start') {
                 await api.startServer(server);
-                message.success(`${server.toUpperCase()} started`);
+                message.success(`${t(`component_${server}`).toUpperCase()} ${t('started')}`);
             } else {
                 await api.stopServer(server);
-                message.success(`${server.toUpperCase()} stopped`);
+                message.success(`${t(`component_${server}`).toUpperCase()} ${t('stopped_action')}`);
             }
             refetchStatus();
         } catch (e: any) {
-            message.error(`Action failed: ${e.message}`);
+            message.error(`${t('action_failed')}: ${e.message}`);
         }
-    }, [message, refetchStatus]);
+    }, [message, refetchStatus, t]);
 
     const handleTriggerSwitch = useCallback(async (path: string, source: string) => {
         try {
             await api.triggerSwitch({ path, source });
-            message.success(`Switch request for ${path} to ${source} accepted`);
+            message.success(t('switch_accepted').replace('{path}', path).replace('{source}', source));
             refetchSwitch();
         } catch (e: any) {
-            message.error(`Switch failed: ${e.message}`);
+            message.error(`${t('switch_failed')}: ${e.message}`);
         }
-    }, [api, message, refetchSwitch]);
+    }, [api, message, refetchSwitch, t]);
 
-    const renderServiceControl = (name: string, key: keyof ServerStatus) => {
+    const handleRestart = useCallback(async (type: 'relay' | 'trans' | 'fission', id: string) => {
+        try {
+            if (type === 'relay') {
+                await api.restartRelayTask(id);
+                refetchRelay();
+            } else if (type === 'trans') {
+                await api.restartTransTask(id);
+                refetchTrans();
+            } else if (type === 'fission') {
+                await api.restartFissionTask(id);
+                refetchFission();
+            }
+            message.success(t('task_restarted'));
+        } catch (e: any) {
+            message.error(`${t('task_restart_failed')}: ${e.message}`);
+        }
+    }, [api, message, refetchRelay, refetchTrans, refetchFission, t]);
+
+    const renderServiceControl = (key: keyof ServerStatus) => {
         const isRunning = serverStatus?.[key]?.running;
-        const canControl = key !== 'http';
         const loading = statusLoading && !serverStatus;
 
         return (
             <Col xs={24} sm={12} md={8} lg={4} key={key}>
-                <Card size="small" title={name} style={{ marginBottom: 16 }}>
+                <Card size="small" title={t(`component_${key}`)} style={{ marginBottom: 16 }}>
                     {loading ? (
                         <Skeleton active paragraph={{ rows: 1 }} />
                     ) : (
                         <Flex justify="space-between" align="center" wrap>
                             <Tag color={isRunning ? 'success' : 'error'}>
-                                {isRunning ? 'RUNNING' : 'STOPPED'}
+                                {isRunning ? t('running') : t('stopped')}
                             </Tag>
-                            {canControl && (
-                                <Space style={{ gap: 8 }}>
-                                    <Button
-                                        type="primary"
-                                        icon={<PlayCircleOutlined />}
-                                        disabled={isRunning || statusLoading}
-                                        onClick={() => handleAction(key as any, 'start')}
-                                        size="small"
-                                    />
-                                    <Button
-                                        danger
-                                        icon={<StopOutlined />}
-                                        disabled={!isRunning || statusLoading}
-                                        onClick={() => handleAction(key as any, 'stop')}
-                                        size="small"
-                                    />
-                                </Space>
-                            )}
+                            <Space style={{ gap: 8 }}>
+                                <Button
+                                    type="primary"
+                                    icon={<PlayCircleOutlined />}
+                                    disabled={isRunning || statusLoading}
+                                    onClick={() => handleAction(key as any, 'start')}
+                                    size="small"
+                                />
+                                <Button
+                                    danger
+                                    icon={<StopOutlined />}
+                                    disabled={!isRunning || statusLoading}
+                                    onClick={() => handleAction(key as any, 'stop')}
+                                    size="small"
+                                />
+                            </Space>
                         </Flex>
                     )}
                 </Card>
@@ -173,19 +210,19 @@ const Tasks = () => {
                 await api.deleteFissionTask(id);
                 refetchFission();
             }
-            message.success('Task deleted successfully');
+            message.success(t('task_deleted'));
         } catch (e: any) {
-            message.error(`Failed to delete task: ${e.message}`);
+            message.error(`${t('task_delete_failed')}: ${e.message}`);
         }
-    }, [api, message, refetchRelay, refetchTrans, refetchFission]);
+    }, [api, message, refetchRelay, refetchTrans, refetchFission, t]);
 
     const relayColumns = [
-        { title: 'App', dataIndex: 'app', key: 'app' },
-        { title: 'Name', dataIndex: 'name', key: 'name' },
-        { title: 'URL', dataIndex: 'url', key: 'url', ellipsis: true },
-        { title: 'Mode', dataIndex: 'mode', key: 'mode', render: (m: string) => <Tag>{m}</Tag> },
+        { title: t('app'), dataIndex: 'app', key: 'app' },
+        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
+        { title: t('url'), dataIndex: 'url', key: 'url', ellipsis: true },
+        { title: t('mode'), dataIndex: 'mode', key: 'mode', render: (m: string) => <Tag>{m}</Tag> },
         {
-            title: 'Uptime',
+            title: t('uptime'),
             dataIndex: 'ts',
             key: 'ts',
             render: (ts: number) => secondsToDhms((
@@ -193,23 +230,31 @@ const Tasks = () => {
             ) / 1000),
         },
         {
-            title: 'Action', key: 'action', render: (_: any, record: any) => (
-                <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleDelete('relay', record.id)}
-                    size="small"
-                />
+            title: t('actions'), key: 'action', render: (_: any, record: any) => (
+                <Space>
+                    <Button
+                        icon={<SyncOutlined />}
+                        onClick={() => handleRestart('relay', record.id)}
+                        size="small"
+                        title={t('restart')}
+                    />
+                    <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete('relay', record.id)}
+                        size="small"
+                    />
+                </Space>
             ),
         },
     ];
 
     const transColumns = [
-        { title: 'App', dataIndex: 'app', key: 'app' },
-        { title: 'Name', dataIndex: 'name', key: 'name' },
-        { title: 'Path', dataIndex: 'path', key: 'path', ellipsis: true },
+        { title: t('app'), dataIndex: 'app', key: 'app' },
+        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
+        { title: t('path'), dataIndex: 'path', key: 'path', ellipsis: true },
         {
-            title: 'Uptime',
+            title: t('uptime'),
             dataIndex: 'ts',
             key: 'ts',
             render: (ts: number) => secondsToDhms((
@@ -217,56 +262,107 @@ const Tasks = () => {
             ) / 1000),
         },
         {
-            title: 'Action', key: 'action', render: (_: any, record: any) => (
-                <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleDelete('trans', record.id)}
-                    size="small"
-                />
+            title: t('actions'), key: 'action', render: (_: any, record: any) => (
+                <Space>
+                    <Button
+                        icon={<SyncOutlined />}
+                        onClick={() => handleRestart('trans', record.id)}
+                        size="small"
+                        title={t('restart')}
+                    />
+                    <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete('trans', record.id)}
+                        size="small"
+                    />
+                </Space>
+            ),
+        },
+    ];
+
+    const fissionColumns = [
+        { title: t('app'), dataIndex: 'app', key: 'app' },
+        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
+        { title: t('path'), dataIndex: 'path', key: 'path', ellipsis: true },
+        {
+            title: t('uptime'),
+            dataIndex: 'ts',
+            key: 'ts',
+            render: (ts: number) => secondsToDhms((
+                Date.now() - ts
+            ) / 1000),
+        },
+        {
+            title: t('actions'), key: 'action', render: (_: any, record: any) => (
+                <Space>
+                    <Button
+                        icon={<SyncOutlined />}
+                        onClick={() => handleRestart('fission', record.id)}
+                        size="small"
+                        title={t('restart')}
+                    />
+                    <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete('fission', record.id)}
+                        size="small"
+                    />
+                </Space>
             ),
         },
     ];
 
     const switchColumns = [
-        { title: 'App', dataIndex: 'app', key: 'app' },
-        { title: 'Name', dataIndex: 'name', key: 'name' },
-        { title: 'Output Path', dataIndex: 'outputPath', key: 'outputPath', ellipsis: true },
+        { title: t('app'), dataIndex: 'app', key: 'app' },
+        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
+        { title: t('output_path'), dataIndex: 'outputPath', key: 'outputPath', ellipsis: true },
         {
-            title: 'Status',
+            title: t('status'),
             key: 'status',
             render: (_: any, record: SwitchTaskStatus) => (
                 <Space>
-                    <Tag color="blue">{record.activeSource || 'None'}</Tag>
+                    <Tag color="blue">{record.activeSource || t('no_data')}</Tag>
                     {record.isSwitching && <SyncOutlined spin />}
-                    {record.pendingSource && <Tag color="orange">Pending: {record.pendingSource}</Tag>}
+                    {record.pendingSource && <Tag color="orange">{t('pending')}: {record.pendingSource}</Tag>}
                 </Space>
             ),
         },
         {
-            title: 'Switch To',
+            title: t('switch_to'),
             key: 'action',
-            render: (_: any, record: SwitchTaskStatus) => (
-                <Select
-                    size="small"
-                    placeholder="Switch Source"
-                    style={{ width: 150 }}
-                    onChange={(value) => handleTriggerSwitch(record.outputPath, value)}
-                    value={record.activeSource}
-                    disabled={record.isSwitching}
-                >
-                    {record.sources.map(src => (
-                        <Select.Option key={src} value={src}>{src}</Select.Option>
-                    ))}
-                </Select>
-            ),
+            render: (_: any, record: SwitchTaskStatus) => {
+                const options = Array.from(new Set([...record.sources, ...allStreamPaths]));
+                return (
+                    <Select
+                        size="small"
+                        placeholder={t('switch_to')}
+                        style={{ width: 200 }}
+                        showSearch
+                        onChange={(value) => handleTriggerSwitch(record.outputPath, value)}
+                        value={record.activeSource}
+                        disabled={record.isSwitching}
+                    >
+                        <Select.OptGroup label={t('configured_sources')}>
+                            {record.sources.map(src => (
+                                <Select.Option key={src} value={src}>{src}</Select.Option>
+                            ))}
+                        </Select.OptGroup>
+                        <Select.OptGroup label={t('active_streams_select')}>
+                            {allStreamPaths.filter(p => !record.sources.includes(p)).map(src => (
+                                <Select.Option key={src} value={src}>{src}</Select.Option>
+                            ))}
+                        </Select.OptGroup>
+                    </Select>
+                );
+            },
         },
     ];
 
     const items = [
         {
             key: 'relay',
-            label: `Relay (${flatRelays.length})`,
+            label: `${t('component_relay')} (${flatRelays.length})`,
             children: relayLoading && flatRelays.length === 0 ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
                 dataSource={flatRelays}
                 columns={relayColumns}
@@ -278,7 +374,7 @@ const Tasks = () => {
         },
         {
             key: 'trans',
-            label: `Trans (${flatTrans.length})`,
+            label: `${t('component_trans')} (${flatTrans.length})`,
             children: transLoading && flatTrans.length === 0 ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
                 dataSource={flatTrans}
                 columns={transColumns}
@@ -290,10 +386,10 @@ const Tasks = () => {
         },
         {
             key: 'fission',
-            label: `Fission (${flatFission.length})`,
+            label: `${t('component_fission')} (${flatFission.length})`,
             children: fissionLoading && flatFission.length === 0 ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
                 dataSource={flatFission}
-                columns={transColumns}
+                columns={fissionColumns}
                 rowKey="id"
                 loading={fissionLoading}
                 pagination={false}
@@ -302,7 +398,7 @@ const Tasks = () => {
         },
         {
             key: 'switch',
-            label: `Switch (${switchData?.length || 0})`,
+            label: `${t('component_switch')} (${switchData?.length || 0})`,
             children: switchLoading && !switchData ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
                 dataSource={switchData || []}
                 columns={switchColumns}
@@ -317,23 +413,22 @@ const Tasks = () => {
     return (
         <div style={{ padding: '0 4px' }}>
             <Title level={4} style={{ marginBottom: 16 }}>
-                Service Controls
+                {t('service_controls')}
             </Title>
             <Row gutter={16}>
-                {renderServiceControl('RTMP', 'rtmp')}
-                {renderServiceControl('HTTP', 'http')}
-                {renderServiceControl('A/V', 'av')}
-                {renderServiceControl('Trans', 'trans')}
-                {renderServiceControl('Relay', 'relay')}
-                {renderServiceControl('Fission', 'fission')}
-                {renderServiceControl('Switch', 'switch')}
+                {renderServiceControl('rtmp')}
+                {renderServiceControl('av')}
+                {renderServiceControl('trans')}
+                {renderServiceControl('relay')}
+                {renderServiceControl('fission')}
+                {renderServiceControl('switch')}
             </Row>
 
             <Card
                 style={{ marginTop: 8 }}
                 title={
                     <Space>
-                        <Title level={4} style={{ margin: 0 }}>Background Tasks</Title>
+                        <Title level={4} style={{ margin: 0 }}>{t('background_tasks')}</Title>
                         {(
                             relayLoading || transLoading || fissionLoading || switchLoading || statusLoading
                         ) && <SyncOutlined spin />}

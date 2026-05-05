@@ -27,10 +27,10 @@ const Dashboard = () => {
     }, [message, refresh, t]);
 
     const chartOptions = [
-        { label: 'Connections', value: 'con' },
-        { label: 'Network', value: 'net' },
-        { label: 'CPU', value: 'cpu' },
-        { label: 'Memory', value: 'mem' },
+        { label: t('connections'), value: 'con' },
+        { label: t('network'), value: 'net' },
+        { label: t('cpu'), value: 'cpu' },
+        { label: t('mem'), value: 'mem' },
     ];
 
     const settingsContent = (
@@ -49,7 +49,7 @@ const Dashboard = () => {
                     <Flex justify="space-between" align="center">
                         <span style={{ fontWeight: 'bold' }}>{t('overview')}</span>
                         <Flex gap="small">
-                            <Popover content={settingsContent} title="Visible Widgets" trigger="click" placement="bottomRight">
+                            <Popover content={settingsContent} title={t('visible_widgets')} trigger="click" placement="bottomRight">
                                 <Button icon={<SettingOutlined />} />
                             </Popover>
                             <Button 

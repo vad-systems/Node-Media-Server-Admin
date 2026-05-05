@@ -2,6 +2,7 @@ import { CameraOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Button, Space, Tooltip } from 'antd';
 import FlvJs from 'flv.js';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from './context/LanguageContext';
 import MediaSegment = FlvJs.MediaSegment;
 
 type MediaType = 'flv' | 'mp4';
@@ -23,6 +24,7 @@ type FlvPlayerProps = {
 };
 
 const FlvPlayer = (props: FlvPlayerProps) => {
+    const { t } = useTranslation();
     const [flvPlayer, setFlvPlayer] = useState<FlvJs.Player | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -104,7 +106,7 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                 }}
             >
                 <Space>
-                    <Tooltip title="Reload Player">
+                    <Tooltip title={t('reload')}>
                         <Button
                             size="small"
                             shape="circle"
@@ -113,7 +115,7 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                             ghost
                         />
                     </Tooltip>
-                    <Tooltip title="Take Snapshot">
+                    <Tooltip title={t('snapshot')}>
                         <Button
                             size="small"
                             shape="circle"

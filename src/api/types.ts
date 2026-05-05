@@ -5,7 +5,6 @@ export interface ComponentStatus {
 export interface ServerStatus {
     av: ComponentStatus;
     fission: ComponentStatus;
-    http: ComponentStatus;
     relay: ComponentStatus;
     rtmp: ComponentStatus;
     trans: ComponentStatus;
@@ -53,33 +52,84 @@ export interface HttpConfig {
     port?: number;
     allow_origin?: string;
     api?: boolean;
+    webroot?: string;
 }
 
 export interface HttpsConfig {
     port?: number;
+    key?: string;
+    cert?: string;
+    passphrase?: string;
 }
 
 export interface RtmpConfig {
     port?: number;
+    ssl?: {
+        port?: number;
+        key?: string;
+        cert?: string;
+    };
     chunk_size?: number;
     ping?: number;
     ping_timeout?: number;
     gop_cache?: boolean;
 }
 
+export interface TransTaskConfig {
+    app: string;
+    pattern: string;
+    rtmp?: boolean;
+    rtmpApp?: string;
+    mp4?: boolean;
+    mp4Flags?: string;
+    hls?: boolean;
+    hlsFlags?: string;
+    hlsKeep?: boolean;
+    dash?: boolean;
+    dashFlags?: string;
+    dashKeep?: boolean;
+    vc?: string;
+    vcParam?: string[];
+    ac?: string;
+    acParam?: string[];
+}
+
 export interface TransConfig {
     ffmpeg: string;
-    tasks: object[];
+    tasks: TransTaskConfig[];
+}
+
+export interface RelayTaskConfig {
+    mode: 'push' | 'pull';
+    edge?: string;
+    rescale?: string;
+    rtsp_transport?: 'udp' | 'tcp' | 'udp_multicast' | 'http';
+    appendName?: boolean;
+    app?: string;
+    pattern?: string;
 }
 
 export interface RelayConfig {
     ffmpeg: string;
-    tasks: object[];
+    tasks: RelayTaskConfig[];
+}
+
+export interface FissionModelConfig {
+    vb?: string;
+    vf?: string;
+    vs?: string;
+    ab?: string;
+}
+
+export interface FissionTaskConfig {
+    app: string;
+    pattern: string;
+    model: FissionModelConfig[];
 }
 
 export interface FissionConfig {
     ffmpeg: string;
-    tasks: object[];
+    tasks: FissionTaskConfig[];
 }
 
 export interface SwitchTaskConfig {

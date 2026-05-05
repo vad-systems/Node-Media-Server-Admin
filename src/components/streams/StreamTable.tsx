@@ -1,6 +1,7 @@
 import { DeleteOutlined, InfoCircleOutlined, SyncOutlined, SwapOutlined } from '@ant-design/icons';
 import { Table, Space, Tag, Tooltip } from 'antd';
 import React, { Fragment, useMemo } from 'react';
+import { useTranslation } from '../../context/LanguageContext';
 import { StreamData } from './types';
 
 type StreamTableProps = {
@@ -13,14 +14,15 @@ type StreamTableProps = {
 };
 
 const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails, deleteStream }: StreamTableProps) => {
+    const { t } = useTranslation();
     const columns = useMemo(() => [
         {
-            title: 'App',
+            title: t('app'),
             dataIndex: 'app',
             key: 'app',
         },
         {
-            title: 'Name',
+            title: t('stream_name'),
             dataIndex: 'name',
             key: 'name',
             render: (name: string, record: StreamData) => {
@@ -32,7 +34,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
                             openVideo(record);
                         }}>{name}</a>
                         {record.switchInfo && (
-                            <Tooltip title={`Switchable: ${record.switchInfo.activeSource}`}>
+                            <Tooltip title={`${t('switchable')}: ${record.switchInfo.activeSource}`}>
                                 <SwapOutlined style={{ color: '#1890ff' }} />
                                 {record.switchInfo.isSwitching && <SyncOutlined spin style={{ fontSize: '12px' }} />}
                             </Tooltip>
@@ -42,55 +44,55 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             },
         },
         {
-            title: 'ID',
+            title: t('stream_id'),
             dataIndex: 'id',
             key: 'id',
             render: (id: string, record: any) => record.isGroup ? null : id,
         },
         {
-            title: 'Audio',
+            title: t('audio'),
             children: [
                 {
-                    title: 'codec',
+                    title: t('codec'),
                     dataIndex: 'ac',
                     key: 'ac',
                 }, {
-                    title: 'freq',
+                    title: t('freq'),
                     dataIndex: 'freq',
                     key: 'freq',
                 }, {
-                    title: 'chan',
+                    title: t('chan'),
                     dataIndex: 'chan',
                     key: 'chan',
                 },
             ],
         },
         {
-            title: 'Video',
+            title: t('video'),
             children: [
                 {
-                    title: 'codec',
+                    title: t('codec'),
                     dataIndex: 'vc',
                     key: 'vc',
                 }, {
-                    title: 'size',
+                    title: t('size'),
                     dataIndex: 'size',
                     key: 'size',
                 }, {
-                    title: 'fps',
+                    title: t('fps'),
                     dataIndex: 'fps',
                     key: 'fps',
                 },
             ],
         },
         {
-            title: 'Time',
+            title: t('time'),
             dataIndex: 'time',
             key: 'time',
             render: (time: string, record: any) => record.isGroup ? null : time,
         },
         {
-            title: 'Clients',
+            title: t('clients'),
             dataIndex: 'clients',
             key: 'clients',
             render: (_: any, record: any) => {
@@ -104,7 +106,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             },
         },
         {
-            title: 'Actions',
+            title: t('actions'),
             dataIndex: 'actions',
             key: 'actions',
             render: (_: any, record: any) => {
@@ -114,20 +116,20 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
                         <a href="##" onClick={(e) => {
                             e.preventDefault();
                             showDetails(record);
-                        }} title="Details">
+                        }} title={t('details')}>
                             <InfoCircleOutlined />
                         </a>
                         <a href="##" onClick={(e) => {
                             e.preventDefault();
                             deleteStream(record);
-                        }} style={{ color: 'red' }} title="Delete">
+                        }} style={{ color: 'red' }} title={t('delete')}>
                             <DeleteOutlined />
                         </a>
                     </Space>
                 );
             },
         },
-    ], [openVideo, showClients, showDetails, deleteStream]);
+    ], [openVideo, showClients, showDetails, deleteStream, t]);
 
     return (
         <Table

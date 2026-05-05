@@ -3,6 +3,7 @@ import { App, Card, Input, Flex, Modal, Radio } from 'antd';
 import { md5 } from 'js-md5';
 import React, { ChangeEventHandler, Fragment, useCallback, useState, useMemo } from 'react';
 import Cookies from 'universal-cookie';
+import { useLocalStorage } from 'usehooks-ts';
 import { api } from './api/service';
 import { StreamStats } from './api/types.js';
 import FlvPlayer from './FlvPlayer';
@@ -12,15 +13,17 @@ import StreamTable from './components/streams/StreamTable';
 import { StreamData } from './components/streams/types';
 import { transformStreamsData } from './components/streams/utils';
 import { useFetch } from './hooks/useFetch';
+import { useTranslation } from './context/LanguageContext';
 import spaceship from './util/spaceship';
 
 const Streams = () => {
     const { message, modal } = App.useApp();
+    const { t } = useTranslation();
     const [cookies] = useState(new Cookies());
 
     const [password, setPassword] = useState(cookies.get('pass') || '');
     const [streamsData, setStreamsData] = useState<StreamData[]>([]);
-    const [grouping, setGrouping] = useState<'none' | 'app' | 'prefix'>('none');
+    const [grouping, setGrouping] = useLocalStorage<'none' | 'app' | 'prefix'>('nms.admin.streams.grouping', 'none');
     const [viewingStreamKey, setViewingStreamKey] = useState<string | null>(null);
     const [modalType, setModalType] = useState<'clients' | 'details' | null>(null);
 
@@ -31,8 +34,8 @@ const Streams = () => {
 
     const onError = useCallback(async (e: Error) => {
         console.warn(e);
-        await message.error(`Failed to fetch streams: ${e.message}`);
-    }, [message]);
+        await message.error(`${t('failed_fetch_streams')}: ${e.message}`);
+    }, [message, t]);
     const onSuccess = useCallback((data: StreamStats) => {
         let transformed = transformStreamsData(data);
         if (switchData) {
@@ -73,7 +76,7 @@ const Streams = () => {
 
         modal.info({
             icon: null,
-            title: 'Video Player',
+            title: t('video_player'),
             width: 640,
             height: 480,
             content: <FlvPlayer
@@ -105,13 +108,13 @@ const Streams = () => {
 
         api.deleteStream(record.app, record.name, sign)
             .then(() => {
-                message.success(`Stream /${record.app}/${record.name} deleted`);
+                message.success(t('stream_deleted').replace('{path}', `${record.app}/${record.name}`));
                 refetch();
             })
             .catch((e) => {
-                message.error(`Failed to delete stream: ${e.message}`);
+                message.error(`${t('failed_delete_stream')}: ${e.message}`);
             });
-    }, [password, refetch, message]);
+    }, [password, refetch, message, t]);
 
     const displayData = useMemo(() => {
         const sorted = [...streamsData].sort(
@@ -174,15 +177,15 @@ const Streams = () => {
             <Card 
                 title={
                     <Flex align="center" gap="small">
-                        <span>Active Streams</span>
+                        <span>{t('active_streams')}</span>
                         {loading && <SyncOutlined spin style={{ color: '#1890ff' }} />}
                     </Flex>
                 }
                 extra={
                     <Radio.Group value={grouping} onChange={e => setGrouping(e.target.value)} size="small">
-                        <Radio.Button value="none">None</Radio.Button>
-                        <Radio.Button value="app">App</Radio.Button>
-                        <Radio.Button value="prefix">Prefix</Radio.Button>
+                        <Radio.Button value="none">{t('none')}</Radio.Button>
+                        <Radio.Button value="app">{t('app')}</Radio.Button>
+                        <Radio.Button value="prefix">{t('prefix')}</Radio.Button>
                     </Radio.Group>
                 }
             >
@@ -190,7 +193,7 @@ const Streams = () => {
                     size="large"
                     prefix={<LockOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
                     style={{ marginBottom: '16px' }}
-                    placeholder="input password"
+                    placeholder={t('stream_secret')}
                     onChange={updatePass}
                     value={password}
                 />
@@ -205,7 +208,7 @@ const Streams = () => {
             </Card>
 
             <Modal
-                title={modalType === 'clients' ? `Clients /${currentViewingStream?.app}/${currentViewingStream?.name}` : `Stream Details: /${currentViewingStream?.app}/${currentViewingStream?.name}`}
+                title={modalType === 'clients' ? `${t('clients')} /${currentViewingStream?.app}/${currentViewingStream?.name}` : `${t('stream_details')}: /${currentViewingStream?.app}/${currentViewingStream?.name}`}
                 open={!!modalType}
                 onCancel={closeModal}
                 footer={null}
