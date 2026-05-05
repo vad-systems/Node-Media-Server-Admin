@@ -9,6 +9,7 @@ export interface ServerStatus {
     relay: ComponentStatus;
     rtmp: ComponentStatus;
     trans: ComponentStatus;
+    switch: ComponentStatus;
 }
 
 export interface ServerInfo {
@@ -81,6 +82,19 @@ export interface FissionConfig {
     tasks: object[];
 }
 
+export interface SwitchTaskConfig {
+    app: string;
+    name: string;
+    sources: string[];
+    defaultSource?: string;
+    switchTimeout?: number;
+    slatePath?: string;
+}
+
+export interface SwitchConfig {
+    tasks: SwitchTaskConfig[];
+}
+
 export interface Config {
     http: HttpConfig;
     https: HttpsConfig;
@@ -88,6 +102,7 @@ export interface Config {
     trans?: TransConfig;
     relay?: RelayConfig;
     fission?: FissionConfig;
+    switch?: SwitchConfig;
     auth?: AuthConfig;
     cluster?: object;
     logType?: number;
@@ -204,4 +219,23 @@ export interface TransStats {
             }>;
         };
     };
+}
+
+export interface SwitchTaskStatus {
+    app: string;
+    name: string;
+    outputPath: string;
+    activeSource: string | null;
+    pendingSource: string | null;
+    isSwitching: boolean;
+    sources: string[];
+    defaultSource: string | null;
+    slatePath: string | null;
+}
+
+export type SwitchStats = SwitchTaskStatus[];
+
+export interface SwitchRequest {
+    path: string;
+    source: string;
 }

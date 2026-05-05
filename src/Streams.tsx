@@ -24,13 +24,25 @@ const Streams = () => {
     const [viewingStreamKey, setViewingStreamKey] = useState<string | null>(null);
     const [modalType, setModalType] = useState<'clients' | 'details' | null>(null);
 
+    const { data: switchData, loading: switchLoading } = useFetch(api.getSwitchTasks, {
+        immediate: true,
+        refreshInterval: 5000,
+    });
+
     const onError = useCallback(async (e: Error) => {
         console.warn(e);
         await message.error(`Failed to fetch streams: ${e.message}`);
     }, [message]);
     const onSuccess = useCallback((data: StreamStats) => {
-        setStreamsData(transformStreamsData(data));
-    }, [setStreamsData]);
+        let transformed = transformStreamsData(data);
+        if (switchData) {
+            transformed = transformed.map(s => ({
+                ...s,
+                switchInfo: switchData.find(st => st.outputPath === `${s.app}/${s.name}`)
+            }));
+        }
+        setStreamsData(transformed);
+    }, [setStreamsData, switchData]);
     const { loading, refetch } = useFetch(api.getStreams, {
         immediate: true,
         refreshInterval: 2000,

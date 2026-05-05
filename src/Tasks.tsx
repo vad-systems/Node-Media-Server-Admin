@@ -1,8 +1,8 @@
-import { DeleteOutlined, PlayCircleOutlined, StopOutlined, SyncOutlined } from '@ant-design/icons';
-import { App, Button, Card, Col, Flex, Row, Skeleton, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { DeleteOutlined, PlayCircleOutlined, StopOutlined, SyncOutlined, SwapOutlined } from '@ant-design/icons';
+import { App, Button, Card, Col, Flex, Row, Skeleton, Space, Table, Tabs, Tag, Typography, Select } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { api } from './api/service';
-import { FissionStats, RelayInfo, ServerStatus, TransStats } from './api/types';
+import { FissionStats, RelayInfo, ServerStatus, TransStats, SwitchTaskStatus } from './api/types';
 import { useFetch } from './hooks/useFetch';
 import secondsToDhms from './util/secondsToDhms';
 
@@ -35,6 +35,12 @@ const Tasks = () => {
         refreshInterval: 5000,
         onError,
     });
+    
+    const { data: switchData, loading: switchLoading, refetch: refetchSwitch } = useFetch(api.getSwitchTasks, {
+        immediate: true,
+        refreshInterval: 5000,
+        onError,
+    });
 
     const { data: serverStatus, loading: statusLoading, refetch: refetchStatus } = useFetch(api.getServerStatus, {
         immediate: true,
@@ -43,7 +49,7 @@ const Tasks = () => {
     });
 
     const handleAction = useCallback(async (
-        server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission',
+        server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch',
         action: 'start' | 'stop',
     ) => {
         try {
@@ -59,6 +65,16 @@ const Tasks = () => {
             message.error(`Action failed: ${e.message}`);
         }
     }, [message, refetchStatus]);
+
+    const handleTriggerSwitch = useCallback(async (path: string, source: string) => {
+        try {
+            await api.triggerSwitch({ path, source });
+            message.success(`Switch request for ${path} to ${source} accepted`);
+            refetchSwitch();
+        } catch (e: any) {
+            message.error(`Switch failed: ${e.message}`);
+        }
+    }, [api, message, refetchSwitch]);
 
     const renderServiceControl = (name: string, key: keyof ServerStatus) => {
         const isRunning = serverStatus?.[key]?.running;
@@ -212,6 +228,41 @@ const Tasks = () => {
         },
     ];
 
+    const switchColumns = [
+        { title: 'App', dataIndex: 'app', key: 'app' },
+        { title: 'Name', dataIndex: 'name', key: 'name' },
+        { title: 'Output Path', dataIndex: 'outputPath', key: 'outputPath', ellipsis: true },
+        {
+            title: 'Status',
+            key: 'status',
+            render: (_: any, record: SwitchTaskStatus) => (
+                <Space>
+                    <Tag color="blue">{record.activeSource || 'None'}</Tag>
+                    {record.isSwitching && <SyncOutlined spin />}
+                    {record.pendingSource && <Tag color="orange">Pending: {record.pendingSource}</Tag>}
+                </Space>
+            ),
+        },
+        {
+            title: 'Switch To',
+            key: 'action',
+            render: (_: any, record: SwitchTaskStatus) => (
+                <Select
+                    size="small"
+                    placeholder="Switch Source"
+                    style={{ width: 150 }}
+                    onChange={(value) => handleTriggerSwitch(record.outputPath, value)}
+                    value={record.activeSource}
+                    disabled={record.isSwitching}
+                >
+                    {record.sources.map(src => (
+                        <Select.Option key={src} value={src}>{src}</Select.Option>
+                    ))}
+                </Select>
+            ),
+        },
+    ];
+
     const items = [
         {
             key: 'relay',
@@ -249,6 +300,18 @@ const Tasks = () => {
                 scroll={{ x: 'max-content' }}
             />,
         },
+        {
+            key: 'switch',
+            label: `Switch (${switchData?.length || 0})`,
+            children: switchLoading && !switchData ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
+                dataSource={switchData || []}
+                columns={switchColumns}
+                rowKey="outputPath"
+                loading={switchLoading}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+            />,
+        },
     ];
 
     return (
@@ -263,6 +326,7 @@ const Tasks = () => {
                 {renderServiceControl('Trans', 'trans')}
                 {renderServiceControl('Relay', 'relay')}
                 {renderServiceControl('Fission', 'fission')}
+                {renderServiceControl('Switch', 'switch')}
             </Row>
 
             <Card
@@ -271,7 +335,7 @@ const Tasks = () => {
                     <Space>
                         <Title level={4} style={{ margin: 0 }}>Background Tasks</Title>
                         {(
-                            relayLoading || transLoading || fissionLoading || statusLoading
+                            relayLoading || transLoading || fissionLoading || switchLoading || statusLoading
                         ) && <SyncOutlined spin />}
                     </Space>
                 }

@@ -8,7 +8,8 @@ import {
     LockOutlined,
     SafetyCertificateOutlined,
     FileTextOutlined,
-    ClusterOutlined
+    ClusterOutlined,
+    SwapOutlined
 } from '@ant-design/icons';
 import { App, Card, Col, Flex, Row, Switch, Form, InputNumber, Input, Button, Skeleton, Divider, Typography, Alert } from 'antd';
 import React, { useCallback, useEffect } from 'react';
@@ -51,6 +52,9 @@ const Config = () => {
                     ffmpeg: config.fission?.ffmpeg,
                     tasks: JSON.stringify(config.fission?.tasks, null, 2),
                 },
+                switch: {
+                    tasks: JSON.stringify(config.switch?.tasks, null, 2),
+                },
                 logType: config.logType,
                 rollingLogLength: config.rollingLogLength,
             });
@@ -84,6 +88,11 @@ const Config = () => {
                 patch.fission = {
                     ffmpeg: values.fission.ffmpeg,
                     tasks: values.fission.tasks ? JSON.parse(values.fission.tasks) : [],
+                };
+            }
+            if (values.switch) {
+                patch.switch = {
+                    tasks: values.switch.tasks ? JSON.parse(values.switch.tasks) : [],
                 };
             }
 
@@ -258,6 +267,13 @@ const Config = () => {
                         </Form.Item>
                         <Form.Item name={['fission', 'tasks']} label="Tasks (JSON)">
                             <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
+                        </Form.Item>
+                    </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                    <Card title={<Flex align="center" gap="small"><SwapOutlined /><span>Switch</span></Flex>}>
+                        <Form.Item name={['switch', 'tasks']} label="Tasks (JSON)">
+                            <Input.TextArea rows={12} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
                         </Form.Item>
                     </Card>
                 </Col>

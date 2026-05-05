@@ -1,5 +1,5 @@
-import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { Table, Space } from 'antd';
+import { DeleteOutlined, InfoCircleOutlined, SyncOutlined, SwapOutlined } from '@ant-design/icons';
+import { Table, Space, Tag, Tooltip } from 'antd';
 import React, { Fragment, useMemo } from 'react';
 import { StreamData } from './types';
 
@@ -23,13 +23,21 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: (name: string, record: any) => {
+            render: (name: string, record: StreamData) => {
                 if (record.isGroup) return <strong>{name}</strong>;
                 return (
-                    <a href="##" onClick={(e) => {
-                        e.preventDefault();
-                        openVideo(record);
-                    }}>{name}</a>
+                    <Space>
+                        <a href="##" onClick={(e) => {
+                            e.preventDefault();
+                            openVideo(record);
+                        }}>{name}</a>
+                        {record.switchInfo && (
+                            <Tooltip title={`Switchable: ${record.switchInfo.activeSource}`}>
+                                <SwapOutlined style={{ color: '#1890ff' }} />
+                                {record.switchInfo.isSwitching && <SyncOutlined spin style={{ fontSize: '12px' }} />}
+                            </Tooltip>
+                        )}
+                    </Space>
                 );
             },
         },

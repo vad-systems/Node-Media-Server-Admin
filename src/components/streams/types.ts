@@ -1,4 +1,5 @@
 import React from 'react';
+import { SwitchTaskStatus } from '../../api/types';
 
 export type ClientData = {
     app: string;
@@ -25,6 +26,7 @@ export type StreamData = {
     time: string;
     clients: ClientData[];
     clientCount: number;
+    switchInfo?: SwitchTaskStatus;
     isGroup?: boolean;
     children?: StreamData[];
 };

@@ -7,6 +7,8 @@ import {
     ServerStatus,
     SingleStreamInfo,
     StreamStats,
+    SwitchRequest,
+    SwitchStats,
     TransStats
 } from './types';
 
@@ -44,9 +46,9 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(config),
     }),
-    startServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission') =>
+    startServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch') =>
         request<{ status: string }>(`/api/server/${server}/start`, { method: 'POST' }),
-    stopServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission') =>
+    stopServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch') =>
         request<{ status: string }>(`/api/server/${server}/stop`, { method: 'POST' }),
 
     getStreams: () => request<StreamStats>('/api/streams'),
@@ -66,4 +68,10 @@ export const api = {
 
     getTransTasks: () => request<TransStats>('/api/trans'),
     deleteTransTask: (id: string) => request<void>(`/api/trans/${id}`, { method: 'DELETE' }),
+
+    getSwitchTasks: () => request<SwitchStats>('/api/switch'),
+    triggerSwitch: (data: SwitchRequest) => request<{ status: string }>('/api/switch', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    }),
 };

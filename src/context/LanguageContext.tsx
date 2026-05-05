@@ -36,6 +36,7 @@ const translations: Record<Locale, Translations> = {
         confirm_delete: 'Are you sure you want to delete this?',
         yes: 'Yes',
         no: 'No',
+        switch: 'Switch',
     },
     de: {
         dashboard: 'Dashboard',
@@ -65,6 +66,7 @@ const translations: Record<Locale, Translations> = {
         confirm_delete: 'Sind Sie sicher, dass Sie dies löschen möchten?',
         yes: 'Ja',
         no: 'Nein',
+        switch: 'Umschalter',
     }
 };
 
