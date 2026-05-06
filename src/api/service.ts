@@ -1,4 +1,4 @@
-import { Config, FissionStats, RelayInfo, RelayStats, ServerInfo, ServerStatus, SingleStreamInfo, StreamStats, SwitchRequest, SwitchStats, TransStats } from './types';
+import { Config, FissionStats, RelayInfo, RelayStats, ServerInfo, ServerStatus, SingleStreamInfo, StreamsTree, StreamStats, SwitchRequest, SwitchStats, TransStats } from './types';
 
 const API_BASE_URL = process.env.API_BASE_URL || '';
 
@@ -40,6 +40,7 @@ export const api = {
         request<{ status: string }>(`/api/server/${server}/stop`, { method: 'POST' }),
 
     getStreams: () => request<StreamStats>('/api/streams'),
+    getStreamsTree: () => request<StreamsTree>('/api/streams/tree'),
     getStream: (app: string, stream: string) =>
         request<SingleStreamInfo>(`/api/streams/${app}/${stream}`),
     deleteStream: (app: string, stream: string, sign: string = '') =>

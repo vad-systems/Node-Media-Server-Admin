@@ -1,5 +1,5 @@
-import { LockOutlined, SyncOutlined } from '@ant-design/icons';
-import { App, Card, Input, Flex, Modal, Radio } from 'antd';
+import { ApartmentOutlined, LockOutlined, SyncOutlined } from '@ant-design/icons';
+import { App, Button, Card, Input, Flex, Modal, Radio } from 'antd';
 import { md5 } from 'js-md5';
 import React, { ChangeEventHandler, Fragment, useCallback, useState, useMemo } from 'react';
 import Cookies from 'universal-cookie';
@@ -10,6 +10,7 @@ import FlvPlayer from './FlvPlayer';
 import ClientTable from './components/streams/ClientTable';
 import StreamDetails from './components/streams/StreamDetails';
 import StreamTable from './components/streams/StreamTable';
+import StreamTree from './components/streams/StreamTree';
 import { StreamData } from './components/streams/types';
 import { transformStreamsData } from './components/streams/utils';
 import { useFetch } from './hooks/useFetch';
@@ -26,6 +27,7 @@ const Streams = () => {
     const [grouping, setGrouping] = useLocalStorage<'none' | 'app' | 'prefix'>('nms.admin.streams.grouping', 'none');
     const [viewingStreamKey, setViewingStreamKey] = useState<string | null>(null);
     const [modalType, setModalType] = useState<'clients' | 'details' | null>(null);
+    const [treeOpen, setTreeOpen] = useState(false);
 
     const { data: switchData, loading: switchLoading } = useFetch(api.getSwitchTasks, {
         immediate: true,
@@ -182,11 +184,20 @@ const Streams = () => {
                     </Flex>
                 }
                 extra={
-                    <Radio.Group value={grouping} onChange={e => setGrouping(e.target.value)} size="small">
-                        <Radio.Button value="none">{t('none')}</Radio.Button>
-                        <Radio.Button value="app">{t('app')}</Radio.Button>
-                        <Radio.Button value="prefix">{t('prefix')}</Radio.Button>
-                    </Radio.Group>
+                    <Flex align="center" gap="small">
+                        <Radio.Group value={grouping} onChange={e => setGrouping(e.target.value)} size="small">
+                            <Radio.Button value="none">{t('none')}</Radio.Button>
+                            <Radio.Button value="app">{t('app')}</Radio.Button>
+                            <Radio.Button value="prefix">{t('prefix')}</Radio.Button>
+                        </Radio.Group>
+                        <Button
+                            size="small"
+                            icon={<ApartmentOutlined />}
+                            onClick={() => setTreeOpen(true)}
+                        >
+                            {t('tree_view')}
+                        </Button>
+                    </Flex>
                 }
             >
                 <Input.Password
@@ -221,6 +232,17 @@ const Streams = () => {
                 {modalType === 'details' && currentViewingStream && (
                     <StreamDetails app={currentViewingStream.app} stream={currentViewingStream.name} ip={currentViewingStream.ip} />
                 )}
+            </Modal>
+
+            <Modal
+                title={t('streams_tree')}
+                open={treeOpen}
+                onCancel={() => setTreeOpen(false)}
+                footer={null}
+                width={720}
+                destroyOnHidden
+            >
+                {treeOpen && <StreamTree />}
             </Modal>
         </Fragment>
     );

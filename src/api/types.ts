@@ -11,6 +11,24 @@ export interface ServerStatus {
     switch: ComponentStatus;
 }
 
+export interface SessionNode {
+    id: string;
+    type: string;
+    status: 'running' | 'stopped';
+    children?: SessionNode[];
+}
+
+export interface BroadcastTreeNode {
+    streamPath: string;
+    publisher?: SessionNode;
+    subscribers?: SessionNode[];
+}
+
+export interface StreamsTree {
+    broadcasts?: BroadcastTreeNode[];
+    orphans?: SessionNode[];
+}
+
 export interface ServerInfo {
     os: {
         arch: string;
