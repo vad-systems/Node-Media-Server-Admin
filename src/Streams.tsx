@@ -29,7 +29,7 @@ const Streams = () => {
     const [modalType, setModalType] = useState<'clients' | 'details' | null>(null);
     const [treeOpen, setTreeOpen] = useState(false);
 
-    const { data: switchData, loading: switchLoading } = useFetch(api.getSwitchTasks, {
+    const { data: switchData, loading: switchLoading, refetch: refetchSwitch } = useFetch(api.getSwitchTasks, {
         immediate: true,
         refreshInterval: 5000,
     });
@@ -43,7 +43,7 @@ const Streams = () => {
         if (switchData) {
             transformed = transformed.map(s => ({
                 ...s,
-                switchInfo: switchData.find(st => st.outputPath === `${s.app}/${s.name}`)
+                switchInfo: switchData.find(st => st.outputPath === `/${s.app}/${s.name}`)
             }));
         }
         setStreamsData(transformed);
@@ -79,14 +79,23 @@ const Streams = () => {
         modal.info({
             icon: null,
             title: t('video_player'),
-            width: 640,
+            width: 720,
             height: 480,
             content: <FlvPlayer
                 url={`/${record.app}/${record.name}.flv${sign}`}
                 type="flv"
+                switchInfo={record.switchInfo}
+                onSwitched={refetchSwitch}
+                app={record.app}
+                name={record.name}
+                streamUptime={record.time}
+                publisherId={record.id}
+                publisherState={record.publisherState}
+                broadcastId={record.broadcastId}
+                broadcastState={record.state}
             />,
         });
-    }, [password, modal]);
+    }, [password, modal, t, refetchSwitch]);
 
     const showClients = useCallback((record: StreamData) => {
         setViewingStreamKey(`${record.app}/${record.name}`);
@@ -97,6 +106,7 @@ const Streams = () => {
         setViewingStreamKey(`${record.app}/${record.name}`);
         setModalType('details');
     }, []);
+
 
     const deleteStream = useCallback((record: StreamData) => {
         let sign = '';

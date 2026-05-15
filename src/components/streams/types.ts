@@ -1,5 +1,5 @@
 import React from 'react';
-import { SwitchTaskStatus } from '../../api/types';
+import { BroadcastState, SessionState, SwitchTaskStatus } from '../../api/types';
 
 export type ClientData = {
     app: string;
@@ -16,6 +16,7 @@ export type StreamData = {
     app: string;
     name: string;
     id: string;
+    broadcastId?: string;
     ip: string;
     ac: string;
     freq: string;
@@ -24,6 +25,8 @@ export type StreamData = {
     size: string;
     fps: string;
     time: string;
+    state?: BroadcastState;
+    publisherState?: SessionState;
     clients: ClientData[];
     clientCount: number;
     switchInfo?: SwitchTaskStatus;

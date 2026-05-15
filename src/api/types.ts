@@ -11,15 +11,34 @@ export interface ServerStatus {
     switch: ComponentStatus;
 }
 
+export type SessionState =
+    | 'CONNECTING'
+    | 'CONNECTED'
+    | 'STARTING'
+    | 'RUNNING'
+    | 'STOPPING'
+    | 'STOPPED'
+    | 'RESTARTING';
+
+export type BroadcastState =
+    | 'REGISTERING'
+    | 'REGISTERED'
+    | 'LIVE'
+    | 'SWITCHING'
+    | 'OFFLINE'
+    | 'STOPPING'
+    | 'STOPPED';
+
 export interface SessionNode {
     id: string;
     type: string;
-    status: 'running' | 'stopped';
+    state?: SessionState;
     children?: SessionNode[];
 }
 
 export interface BroadcastTreeNode {
     streamPath: string;
+    state?: BroadcastState;
     publisher?: SessionNode;
     subscribers?: SessionNode[];
 }
@@ -192,6 +211,7 @@ export interface PublisherInfo {
     clientId: string;
     ip: string;
     protocol: string;
+    state?: SessionState;
     connectCreated: number;
     video: {
         codec: string;
@@ -214,6 +234,7 @@ export interface SubscriberInfo {
     app: string;
     stream: string;
     clientId: string;
+    state?: SessionState;
     connectCreated: number;
     bytes: number;
     ip: string;
@@ -223,9 +244,10 @@ export interface SubscriberInfo {
 export interface StreamStats {
     [app: string]: {
         [name: string]: {
-            key: string;
+            id: string;
             app: string;
             name: string;
+            state?: BroadcastState;
             publisher: PublisherInfo | null;
             subscribers: SubscriberInfo[];
         };
@@ -233,17 +255,19 @@ export interface StreamStats {
 }
 
 export interface SingleStreamInfo {
-    isLive: boolean;
     viewers: number;
     duration: number;
     bitrate: number;
     startTime: number | null;
+    state?: BroadcastState;
+    publisherState?: SessionState;
     arguments: object;
 }
 
 export interface RelayInfo {
     app: string;
     name: string;
+    state?: SessionState;
     path: string;
     url: string;
     mode: string;
@@ -257,6 +281,7 @@ export interface FissionStats {
             fission: Array<{
                 app: string;
                 name: string;
+                state?: SessionState;
                 path: string;
                 id: string;
                 ts: number;
@@ -280,6 +305,7 @@ export interface TransStats {
             trans: Array<{
                 app: string;
                 name: string;
+                state?: SessionState;
                 path: string;
                 id: string;
                 ts: number;
@@ -293,6 +319,7 @@ export interface SwitchTaskStatus {
     app: string;
     name: string;
     outputPath: string;
+    state?: BroadcastState;
     activeSource: string | null;
     pendingSource: string | null;
     isSwitching: boolean;

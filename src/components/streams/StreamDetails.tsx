@@ -1,10 +1,11 @@
-import { Descriptions, Spin, Tag } from 'antd';
+import { Descriptions, Spin } from 'antd';
 import React, { useCallback } from 'react';
 import { api } from '../../api/service';
 import { useFetch } from '../../hooks/useFetch';
 import secondsToDhms from '../../util/secondsToDhms';
 import bitrateToSize from '../../util/bitrateToSize';
 import { useTranslation } from '../../context/LanguageContext';
+import StateTag from '../StateTag';
 
 interface StreamDetailsProps {
     app: string;
@@ -29,7 +30,10 @@ const StreamDetails = ({ app, stream, ip }: StreamDetailsProps) => {
     return (
         <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="IP">{ip || 'N/A'}</Descriptions.Item>
-            <Descriptions.Item label={t('live')}>{data.isLive ? <Tag color="success">{t('yes')}</Tag> : <Tag color="error">{t('no')}</Tag>}</Descriptions.Item>
+            <Descriptions.Item label={t('state')}>
+                <StateTag kind="broadcast" state={data.state} />
+                <StateTag kind="session" state={data.publisherState} />
+            </Descriptions.Item>
             <Descriptions.Item label={t('viewers')}>{data.viewers}</Descriptions.Item>
             <Descriptions.Item label={t('duration')}>{secondsToDhms(data.duration)}</Descriptions.Item>
             <Descriptions.Item label={t('bitrate')}>{bitrateToSize(data.bitrate)}</Descriptions.Item>

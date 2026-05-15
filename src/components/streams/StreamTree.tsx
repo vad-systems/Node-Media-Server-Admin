@@ -1,17 +1,12 @@
 import { ApiOutlined, BranchesOutlined, CloudUploadOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import { App, Empty, Skeleton, Tag, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
-import React, { ReactNode, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { api } from '../../api/service';
 import { BroadcastTreeNode, SessionNode, StreamsTree } from '../../api/types';
 import { useTranslation } from '../../context/LanguageContext';
 import { useFetch } from '../../hooks/useFetch';
-
-const statusTag = (status: SessionNode['status'], t: (k: string) => string): ReactNode => (
-    <Tag color={status === 'running' ? 'success' : 'default'} style={{ marginLeft: 8 }}>
-        {status === 'running' ? t('running') : t('stopped')}
-    </Tag>
-);
+import StateTag from '../StateTag';
 
 const sessionToNode = (
     session: SessionNode,
@@ -24,7 +19,7 @@ const sessionToNode = (
         <span>
             <span style={{ fontFamily: 'monospace' }}>{session.id}</span>
             <Tag style={{ marginLeft: 8 }}>{session.type}</Tag>
-            {statusTag(session.status, t)}
+            <span style={{ marginLeft: 8 }}><StateTag kind="session" state={session.state} /></span>
         </span>
     ),
     children: session.children?.map((child, idx) =>
@@ -58,7 +53,12 @@ const broadcastToNode = (
     return {
         key: `bcast-${broadcast.streamPath}`,
         icon: <ApiOutlined />,
-        title: <span style={{ fontFamily: 'monospace' }}>/{broadcast.streamPath}</span>,
+        title: (
+            <span>
+                <span style={{ fontFamily: 'monospace' }}>/{broadcast.streamPath}</span>
+                <span style={{ marginLeft: 8 }}><StateTag kind="broadcast" state={broadcast.state} /></span>
+            </span>
+        ),
         children,
     };
 };

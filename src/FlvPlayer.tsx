@@ -1,7 +1,13 @@
 import { CameraOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Button, Space, Tooltip } from 'antd';
+import { Button, Divider, Space, Tooltip, Typography } from 'antd';
 import FlvJs from 'flv.js';
-import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import React, { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import StateTag from './components/StateTag';
+import SwitchControl from './components/streams/SwitchControl';
+import { BroadcastState, SessionState, SwitchTaskStatus } from './api/types';
+import { api } from './api/service';
+import { useFetch } from './hooks/useFetch';
+import secondsToDhmsSimple from './util/secondsToDhmsSimple';
 import { useTranslation } from './context/LanguageContext';
 import MediaSegment = FlvJs.MediaSegment;
 
@@ -21,6 +27,15 @@ type FlvPlayerProps = {
     filesize?: number,
     segments?: MediaSegment[],
     config?: FlvJs.Config,
+    switchInfo?: SwitchTaskStatus | null,
+    onSwitched?: () => void,
+    app?: string,
+    name?: string,
+    streamUptime?: string,
+    publisherId?: string,
+    publisherState?: SessionState,
+    broadcastId?: string,
+    broadcastState?: BroadcastState,
 };
 
 const FlvPlayer = (props: FlvPlayerProps) => {
@@ -28,7 +43,51 @@ const FlvPlayer = (props: FlvPlayerProps) => {
     const [flvPlayer, setFlvPlayer] = useState<FlvJs.Player | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    const { className, style, ...playerProps } = props;
+    const {
+        className, style, switchInfo, onSwitched,
+        app, name,
+        streamUptime: initialUptime,
+        publisherId: initialPublisherId,
+        publisherState: initialPublisherState,
+        broadcastId: initialBroadcastId,
+        broadcastState: initialBroadcastState,
+        ...playerProps
+    } = props;
+
+    // Self-poll streams so the dialog metadata updates live.
+    const { data: streamsData } = useFetch(api.getStreams, {
+        immediate: true,
+        refreshInterval: 2000,
+        enabled: !!app && !!name,
+    });
+
+    const live = useMemo(() => {
+        if (!app || !name || !streamsData) return null;
+        const entry = streamsData[app]?.[name];
+        if (!entry) return null;
+        const publisher = entry.publisher;
+        const uptime = publisher?.connectCreated
+            ? secondsToDhmsSimple((Date.now() - new Date(publisher.connectCreated).getTime()) / 1000)
+            : undefined;
+        return {
+            broadcastId: entry.id,
+            broadcastState: entry.state,
+            uptime,
+            publisherId: publisher?.clientId,
+            publisherState: publisher?.state,
+        };
+    }, [streamsData, app, name]);
+
+    const broadcastId = live?.broadcastId ?? initialBroadcastId;
+    const broadcastState = live?.broadcastState ?? initialBroadcastState;
+    const streamUptime = live?.uptime ?? initialUptime;
+    const publisherId = live?.publisherId ?? initialPublisherId;
+    const publisherState = live?.publisherState ?? initialPublisherState;
+
+    const streamPath = app && name ? `${app}/${name}` : undefined;
+    const hasInfo = streamPath !== undefined || streamUptime !== undefined
+        || publisherId !== undefined || publisherState !== undefined
+        || broadcastId !== undefined || broadcastState !== undefined;
 
     const initFlv = useCallback(($video: HTMLVideoElement) => {
         let flvPlayer: FlvJs.Player | null = null;
@@ -83,9 +142,24 @@ const FlvPlayer = (props: FlvPlayerProps) => {
     }, [initFlv]);
 
     return (
+        <div className={className} style={style}>
+        {hasInfo && (
+            <div style={{ marginBottom: 8 }}>
+                <Space wrap size={8} align="center">
+                    {streamPath && (
+                        <Typography.Text strong style={{ fontSize: 16 }}>{streamPath}</Typography.Text>
+                    )}
+                    {broadcastState !== undefined && (
+                        <StateTag kind="broadcast" state={broadcastState} />
+                    )}
+                    {publisherState !== undefined && (
+                        <StateTag kind="session" state={publisherState} />
+                    )}
+                </Space>
+            </div>
+        )}
         <div
-            className={className}
-            style={Object.assign({ position: 'relative', width: '100%', backgroundColor: '#000' }, style)}
+            style={{ position: 'relative', width: '100%', backgroundColor: '#000' }}
         >
             <video
                 controls
@@ -126,6 +200,29 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                     </Tooltip>
                 </Space>
             </div>
+        </div>
+        {hasInfo && (streamUptime || broadcastId || publisherId) && (
+            <div style={{ marginTop: 8, fontSize: 12 }}>
+                <Space split={<Divider type="vertical" style={{ margin: 0 }} />} wrap size={4}>
+                    {streamUptime !== undefined && (
+                        <Typography.Text type="secondary">
+                            {t('uptime')}: {streamUptime}
+                        </Typography.Text>
+                    )}
+                    {broadcastId !== undefined && (
+                        <Typography.Text type="secondary">
+                            {t('broadcast_id')}: <Typography.Text code copyable={{ text: broadcastId }}>{broadcastId}</Typography.Text>
+                        </Typography.Text>
+                    )}
+                    {publisherId !== undefined && (
+                        <Typography.Text type="secondary">
+                            {t('publisher_id')}: <Typography.Text code copyable={{ text: publisherId }}>{publisherId}</Typography.Text>
+                        </Typography.Text>
+                    )}
+                </Space>
+            </div>
+        )}
+        {switchInfo && <SwitchControl switchInfo={switchInfo} onSwitched={onSwitched} />}
         </div>
     );
 };

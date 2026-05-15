@@ -45,25 +45,40 @@ export const api = {
         request<SingleStreamInfo>(`/api/streams/${app}/${stream}`),
     deleteStream: (app: string, stream: string, sign: string = '') =>
         request<string>(`/api/streams/${app}/${stream}${sign}`, { method: 'DELETE' }),
+    stopStream: (app: string, stream: string) =>
+        request<{ status: string }>(`/api/streams/${app}/${stream}/stop`, { method: 'POST' }),
+    startSession: (id: string) =>
+        request<{ status: string }>(`/api/streams/session/${id}/start`, { method: 'POST', body: '{}' }),
+    stopSession: (id: string) =>
+        request<{ status: string }>(`/api/streams/session/${id}/stop`, { method: 'POST' }),
+    restartSession: (id: string) =>
+        request<{ status: string }>(`/api/streams/session/${id}/restart`, { method: 'POST' }),
 
     getFissionTasks: () => request<FissionStats>('/api/fission'),
     deleteFissionTask: (id: string) => request<void>(`/api/fission/${id}`, { method: 'DELETE' }),
+    startFissionTask: (id: string) => request<{ status: string }>(`/api/fission/start/${id}`, { method: 'POST', body: '{}' }),
     restartFissionTask: (id: string) => request<void>(`/api/fission/restart/${id}`, { method: 'POST' }),
 
     getRelayTasks: () => request<RelayStats>('/api/relay'),
     getRelayTask: (id: string) => request<RelayInfo[]>(`/api/relay/${id}`),
     deleteRelayTask: (id: string) => request<void>(`/api/relay/${id}`, { method: 'DELETE' }),
+    startRelayTask: (id: string) => request<{ status: string }>(`/api/relay/start/${id}`, { method: 'POST', body: '{}' }),
     restartRelayTask: (id: string) => request<void>(`/api/relay/restart/${id}`, { method: 'POST' }),
     getRelayTasksByStream: (app: string, name: string) =>
         request<RelayInfo[]>(`/api/relay/${app}/${name}`),
 
     getTransTasks: () => request<TransStats>('/api/trans'),
     deleteTransTask: (id: string) => request<void>(`/api/trans/${id}`, { method: 'DELETE' }),
+    startTransTask: (id: string) => request<{ status: string }>(`/api/trans/start/${id}`, { method: 'POST', body: '{}' }),
     restartTransTask: (id: string) => request<void>(`/api/trans/restart/${id}`, { method: 'POST' }),
 
     getSwitchTasks: () => request<SwitchStats>('/api/switch'),
     triggerSwitch: (data: SwitchRequest) => request<{ status: string }>('/api/switch', {
         method: 'POST',
         body: JSON.stringify(data),
+    }),
+    stopSwitchTask: (path: string) => request<{ status: string }>('/api/switch/stop', {
+        method: 'POST',
+        body: JSON.stringify({ path }),
     }),
 };
