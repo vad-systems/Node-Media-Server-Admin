@@ -1,13 +1,16 @@
-import { DeleteOutlined, PlayCircleOutlined, StopOutlined, SyncOutlined, SwapOutlined } from '@ant-design/icons';
-import { App, Button, Card, Col, Flex, Row, Skeleton, Space, Table, Tabs, Tag, Typography, Select } from 'antd';
+import { SyncOutlined } from '@ant-design/icons';
+import { App, Card, Row, Space, Tabs, Typography } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useLocalStorage } from 'usehooks-ts';
 import { api } from './api/service';
-import { FissionStats, RelayInfo, ServerStatus, SessionState, TransStats, SwitchTaskStatus } from './api/types';
-import { useFetch } from './hooks/useFetch';
+import { FissionStats, RelayInfo, TransStats } from './api/types';
+import ServiceControl, { ServerComponentKey } from './components/tasks/ServiceControl';
+import BasicTaskTable from './components/tasks/BasicTaskTable';
+import SwitchTaskTable from './components/tasks/SwitchTaskTable';
+import StaticTaskTable from './components/tasks/StaticTaskTable';
+import { useTaskActions } from './components/tasks/useTaskActions';
 import { useTranslation } from './context/LanguageContext';
-import StateTag from './components/StateTag';
-import secondsToDhms from './util/secondsToDhms';
+import { useFetch } from './hooks/useFetch';
 
 const { Title } = Typography;
 
@@ -49,12 +52,19 @@ const Tasks = () => {
         onError,
         enabled: !!serverStatus?.fission?.running,
     });
-    
+
     const { data: switchData, loading: switchLoading, refetch: refetchSwitch } = useFetch(api.getSwitchTasks, {
         immediate: true,
         refreshInterval: 5000,
         onError,
         enabled: !!serverStatus?.switch?.running,
+    });
+
+    const { data: staticData, loading: staticLoading } = useFetch(api.getStaticTasks, {
+        immediate: true,
+        refreshInterval: 5000,
+        onError,
+        enabled: !!serverStatus?.static?.running,
     });
 
     const { data: streamsData } = useFetch(api.getStreams, {
@@ -73,10 +83,7 @@ const Tasks = () => {
         return Array.from(new Set(paths));
     }, [streamsData]);
 
-    const handleAction = useCallback(async (
-        server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch',
-        action: 'start' | 'stop',
-    ) => {
+    const handleAction = useCallback(async (server: ServerComponentKey, action: 'start' | 'stop') => {
         try {
             if (action === 'start') {
                 await api.startServer(server);
@@ -91,416 +98,110 @@ const Tasks = () => {
         }
     }, [message, refetchStatus, t]);
 
-    const handleTriggerSwitch = useCallback(async (path: string, source: string) => {
-        try {
-            await api.triggerSwitch({ path, source });
-            message.success(t('switch_accepted').replace('{path}', path).replace('{source}', source));
-            refetchSwitch();
-        } catch (e: any) {
-            message.error(`${t('switch_failed')}: ${e.message}`);
-        }
-    }, [api, message, refetchSwitch, t]);
-
-    const handleRestart = useCallback(async (type: 'relay' | 'trans' | 'fission', id: string) => {
-        try {
-            if (type === 'relay') {
-                await api.restartRelayTask(id);
-                refetchRelay();
-            } else if (type === 'trans') {
-                await api.restartTransTask(id);
-                refetchTrans();
-            } else if (type === 'fission') {
-                await api.restartFissionTask(id);
-                refetchFission();
-            }
-            message.success(t('task_restarted'));
-        } catch (e: any) {
-            message.error(`${t('task_restart_failed')}: ${e.message}`);
-        }
-    }, [api, message, refetchRelay, refetchTrans, refetchFission, t]);
-
-    const handleStart = useCallback(async (type: 'relay' | 'trans' | 'fission', id: string) => {
-        try {
-            if (type === 'relay') {
-                await api.startRelayTask(id);
-                refetchRelay();
-            } else if (type === 'trans') {
-                await api.startTransTask(id);
-                refetchTrans();
-            } else if (type === 'fission') {
-                await api.startFissionTask(id);
-                refetchFission();
-            }
-            message.success(t('task_started'));
-        } catch (e: any) {
-            message.error(`${t('task_start_failed')}: ${e.message}`);
-        }
-    }, [api, message, refetchRelay, refetchTrans, refetchFission, t]);
-
-    const handleStopSwitch = useCallback(async (path: string) => {
-        try {
-            await api.stopSwitchTask(path);
-            message.success(t('switch_stopped').replace('{path}', path));
-            refetchSwitch();
-        } catch (e: any) {
-            message.error(`${t('switch_stop_failed')}: ${e.message}`);
-        }
-    }, [api, message, refetchSwitch, t]);
-
-    const renderServiceControl = (key: keyof ServerStatus) => {
-        const isRunning = serverStatus?.[key]?.running;
-        const loading = statusLoading && !serverStatus;
-
-        return (
-            <Col xs={24} sm={12} md={8} lg={4} key={key}>
-                <Card size="small" title={t(`component_${key}`)} style={{ marginBottom: 16 }}>
-                    {loading ? (
-                        <Skeleton active paragraph={{ rows: 1 }} />
-                    ) : (
-                        <Flex justify="space-between" align="center" wrap>
-                            <Tag color={isRunning ? 'success' : 'error'}>
-                                {isRunning ? t('running') : t('stopped')}
-                            </Tag>
-                            <Space style={{ gap: 8 }}>
-                                <Button
-                                    type="primary"
-                                    icon={<PlayCircleOutlined />}
-                                    disabled={isRunning || statusLoading}
-                                    onClick={() => handleAction(key as any, 'start')}
-                                    size="small"
-                                />
-                                <Button
-                                    danger
-                                    icon={<StopOutlined />}
-                                    disabled={!isRunning || statusLoading}
-                                    onClick={() => handleAction(key as any, 'stop')}
-                                    size="small"
-                                />
-                            </Space>
-                        </Flex>
-                    )}
-                </Card>
-            </Col>
-        );
-    };
+    const { handleStart, handleRestart, handleDelete } = useTaskActions({
+        refetchRelay, refetchTrans, refetchFission,
+    });
 
     const flatRelays = useMemo(() => {
-        if (!relayData) {
-            return [];
-        }
+        if (!relayData) return [];
         const list: RelayInfo[] = [];
         Object.values(relayData).forEach(apps => {
             Object.values(apps).forEach(streams => {
-                streams.relays.forEach(relay => {
-                    list.push(relay);
-                });
+                streams.relays.forEach(relay => list.push(relay));
             });
         });
         return list;
     }, [relayData]);
 
     const flatTrans = useMemo(() => {
-        if (!transData) {
-            return [];
-        }
+        if (!transData) return [];
         const list: TransTask[] = [];
         Object.values(transData).forEach(apps => {
             Object.values(apps).forEach(streams => {
-                streams.trans.forEach(trans => {
-                    list.push(trans);
-                });
+                streams.trans.forEach(trans => list.push(trans));
             });
         });
         return list;
     }, [transData]);
 
     const flatFission = useMemo(() => {
-        if (!fissionData) {
-            return [];
-        }
+        if (!fissionData) return [];
         const list: FissionTask[] = [];
         Object.values(fissionData).forEach(apps => {
             Object.values(apps).forEach(streams => {
-                streams.fission.forEach(fission => {
-                    list.push(fission);
-                });
+                streams.fission.forEach(fission => list.push(fission));
             });
         });
         return list;
     }, [fissionData]);
 
-    const handleDelete = useCallback(async (type: 'relay' | 'trans' | 'fission', id: string) => {
-        try {
-            if (type === 'relay') {
-                await api.deleteRelayTask(id);
-                refetchRelay();
-            } else if (type === 'trans') {
-                await api.deleteTransTask(id);
-                refetchTrans();
-            } else if (type === 'fission') {
-                await api.deleteFissionTask(id);
-                refetchFission();
-            }
-            message.success(t('task_deleted'));
-        } catch (e: any) {
-            message.error(`${t('task_delete_failed')}: ${e.message}`);
-        }
-    }, [api, message, refetchRelay, refetchTrans, refetchFission, t]);
-
-    const relayColumns = [
-        { title: t('app'), dataIndex: 'app', key: 'app' },
-        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
-        { title: t('state'), dataIndex: 'state', key: 'state', render: (s: SessionState | undefined) => <StateTag kind="session" state={s} /> },
-        { title: t('url'), dataIndex: 'url', key: 'url', ellipsis: true },
-        { title: t('mode'), dataIndex: 'mode', key: 'mode', render: (m: string) => <Tag>{m}</Tag> },
-        {
-            title: t('uptime'),
-            dataIndex: 'ts',
-            key: 'ts',
-            render: (ts: number) => secondsToDhms((
-                Date.now() - ts
-            ) / 1000),
-        },
-        {
-            title: t('actions'), key: 'action', render: (_: any, record: any) => (
-                record.state === 'STOPPED' ? (
-                    <Space>
-                        <Button
-                            type="primary"
-                            icon={<PlayCircleOutlined />}
-                            onClick={() => handleStart('relay', record.id)}
-                            size="small"
-                            title={t('start')}
-                        />
-                    </Space>
-                ) : (
-                    <Space>
-                        <Button
-                            icon={<SyncOutlined />}
-                            onClick={() => handleRestart('relay', record.id)}
-                            size="small"
-                            title={t('restart')}
-                        />
-                        <Button
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDelete('relay', record.id)}
-                            size="small"
-                        />
-                    </Space>
-                )
-            ),
-        },
-    ];
-
-    const transColumns = [
-        { title: t('app'), dataIndex: 'app', key: 'app' },
-        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
-        { title: t('state'), dataIndex: 'state', key: 'state', render: (s: SessionState | undefined) => <StateTag kind="session" state={s} /> },
-        { title: t('path'), dataIndex: 'path', key: 'path', ellipsis: true },
-        {
-            title: t('uptime'),
-            dataIndex: 'ts',
-            key: 'ts',
-            render: (ts: number) => secondsToDhms((
-                Date.now() - ts
-            ) / 1000),
-        },
-        {
-            title: t('actions'), key: 'action', render: (_: any, record: any) => (
-                record.state === 'STOPPED' ? (
-                    <Space>
-                        <Button
-                            type="primary"
-                            icon={<PlayCircleOutlined />}
-                            onClick={() => handleStart('trans', record.id)}
-                            size="small"
-                            title={t('start')}
-                        />
-                    </Space>
-                ) : (
-                    <Space>
-                        <Button
-                            icon={<SyncOutlined />}
-                            onClick={() => handleRestart('trans', record.id)}
-                            size="small"
-                            title={t('restart')}
-                        />
-                        <Button
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDelete('trans', record.id)}
-                            size="small"
-                        />
-                    </Space>
-                )
-            ),
-        },
-    ];
-
-    const fissionColumns = [
-        { title: t('app'), dataIndex: 'app', key: 'app' },
-        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
-        { title: t('state'), dataIndex: 'state', key: 'state', render: (s: SessionState | undefined) => <StateTag kind="session" state={s} /> },
-        { title: t('path'), dataIndex: 'path', key: 'path', ellipsis: true },
-        {
-            title: t('uptime'),
-            dataIndex: 'ts',
-            key: 'ts',
-            render: (ts: number) => secondsToDhms((
-                Date.now() - ts
-            ) / 1000),
-        },
-        {
-            title: t('actions'), key: 'action', render: (_: any, record: any) => (
-                record.state === 'STOPPED' ? (
-                    <Space>
-                        <Button
-                            type="primary"
-                            icon={<PlayCircleOutlined />}
-                            onClick={() => handleStart('fission', record.id)}
-                            size="small"
-                            title={t('start')}
-                        />
-                    </Space>
-                ) : (
-                    <Space>
-                        <Button
-                            icon={<SyncOutlined />}
-                            onClick={() => handleRestart('fission', record.id)}
-                            size="small"
-                            title={t('restart')}
-                        />
-                        <Button
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDelete('fission', record.id)}
-                            size="small"
-                        />
-                    </Space>
-                )
-            ),
-        },
-    ];
-
-    const switchColumns = [
-        { title: t('app'), dataIndex: 'app', key: 'app' },
-        { title: t('stream_name'), dataIndex: 'name', key: 'name' },
-        { title: t('output_path'), dataIndex: 'outputPath', key: 'outputPath', ellipsis: true },
-        {
-            title: t('state'),
-            key: 'state',
-            render: (_: any, record: SwitchTaskStatus) => <StateTag kind="broadcast" state={record.state} />,
-        },
-        {
-            title: t('status'),
-            key: 'status',
-            render: (_: any, record: SwitchTaskStatus) => (
-                <Space>
-                    <Tag color="blue">{record.activeSource || t('no_data')}</Tag>
-                    {record.isSwitching && <SyncOutlined spin />}
-                    {record.pendingSource && <Tag color="orange">{t('pending')}: {record.pendingSource}</Tag>}
-                </Space>
-            ),
-        },
-        {
-            title: t('switch_to'),
-            key: 'action',
-            render: (_: any, record: SwitchTaskStatus) => {
-                const isExcluded = (p: string) => p === record.outputPath || p.startsWith(`${record.outputPath}/`);
-                const filteredSources = record.sources.filter(p => !isExcluded(p));
-                const filteredActive = allStreamPaths.filter(p => !record.sources.includes(p) && !isExcluded(p));
-                return (
-                    <Select
-                        size="small"
-                        placeholder={t('switch_to')}
-                        style={{ width: 200 }}
-                        showSearch
-                        onChange={(value) => handleTriggerSwitch(record.outputPath, value)}
-                        value={record.activeSource}
-                        disabled={record.isSwitching}
-                    >
-                        <Select.OptGroup label={t('configured_sources')}>
-                            {filteredSources.map(src => (
-                                <Select.Option key={src} value={src}>{src}</Select.Option>
-                            ))}
-                        </Select.OptGroup>
-                        <Select.OptGroup label={t('active_streams_select')}>
-                            {filteredActive.map(src => (
-                                <Select.Option key={src} value={src}>{src}</Select.Option>
-                            ))}
-                        </Select.OptGroup>
-                    </Select>
-                );
-            },
-        },
-        {
-            title: t('actions'),
-            key: 'action',
-            render: (_: any, record: SwitchTaskStatus) => (
-                <Space>
-                    <Button
-                        danger
-                        icon={<StopOutlined />}
-                        onClick={() => handleStopSwitch(record.outputPath)}
-                        size="small"
-                        title={t('stop')}
-                    />
-                </Space>
-            ),
-        },
-    ];
-
     const items = [
         {
             key: 'relay',
             label: `${t('component_relay')} (${flatRelays.length})`,
-            children: relayLoading && flatRelays.length === 0 ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
-                dataSource={flatRelays}
-                columns={relayColumns}
-                rowKey="id"
-                loading={relayLoading}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-            />,
+            children: (
+                <BasicTaskTable
+                    type="relay"
+                    data={flatRelays}
+                    loading={relayLoading}
+                    pathField="url"
+                    showMode
+                    onStart={handleStart}
+                    onRestart={handleRestart}
+                    onDelete={handleDelete}
+                />
+            ),
         },
         {
             key: 'trans',
             label: `${t('component_trans')} (${flatTrans.length})`,
-            children: transLoading && flatTrans.length === 0 ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
-                dataSource={flatTrans}
-                columns={transColumns}
-                rowKey="id"
-                loading={transLoading}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-            />,
+            children: (
+                <BasicTaskTable
+                    type="trans"
+                    data={flatTrans}
+                    loading={transLoading}
+                    pathField="path"
+                    onStart={handleStart}
+                    onRestart={handleRestart}
+                    onDelete={handleDelete}
+                />
+            ),
         },
         {
             key: 'fission',
             label: `${t('component_fission')} (${flatFission.length})`,
-            children: fissionLoading && flatFission.length === 0 ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
-                dataSource={flatFission}
-                columns={fissionColumns}
-                rowKey="id"
-                loading={fissionLoading}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-            />,
+            children: (
+                <BasicTaskTable
+                    type="fission"
+                    data={flatFission}
+                    loading={fissionLoading}
+                    pathField="path"
+                    onStart={handleStart}
+                    onRestart={handleRestart}
+                    onDelete={handleDelete}
+                />
+            ),
         },
         {
             key: 'switch',
             label: `${t('component_switch')} (${switchData?.length || 0})`,
-            children: switchLoading && !switchData ? <Skeleton active paragraph={{ rows: 5 }} /> : <Table
-                dataSource={switchData || []}
-                columns={switchColumns}
-                rowKey="outputPath"
-                loading={switchLoading}
-                pagination={false}
-                scroll={{ x: 'max-content' }}
-            />,
+            children: (
+                <SwitchTaskTable
+                    data={switchData}
+                    loading={switchLoading}
+                    allStreamPaths={allStreamPaths}
+                    refetch={refetchSwitch}
+                />
+            ),
+        },
+        {
+            key: 'static',
+            label: `${t('component_static')} (${staticData?.length || 0})`,
+            children: <StaticTaskTable data={staticData} loading={staticLoading} />,
         },
     ];
+
+    const serviceKeys: ServerComponentKey[] = ['rtmp', 'av', 'trans', 'relay', 'fission', 'switch', 'static'];
 
     return (
         <div style={{ padding: '0 4px' }}>
@@ -508,12 +209,15 @@ const Tasks = () => {
                 {t('service_controls')}
             </Title>
             <Row gutter={16}>
-                {renderServiceControl('rtmp')}
-                {renderServiceControl('av')}
-                {renderServiceControl('trans')}
-                {renderServiceControl('relay')}
-                {renderServiceControl('fission')}
-                {renderServiceControl('switch')}
+                {serviceKeys.map(key => (
+                    <ServiceControl
+                        key={key}
+                        componentKey={key}
+                        serverStatus={serverStatus}
+                        loading={statusLoading}
+                        onAction={handleAction}
+                    />
+                ))}
             </Row>
 
             <Card
@@ -522,7 +226,7 @@ const Tasks = () => {
                     <Space>
                         <Title level={4} style={{ margin: 0 }}>{t('background_tasks')}</Title>
                         {(
-                            relayLoading || transLoading || fissionLoading || switchLoading || statusLoading
+                            relayLoading || transLoading || fissionLoading || switchLoading || staticLoading || statusLoading
                         ) && <SyncOutlined spin />}
                     </Space>
                 }

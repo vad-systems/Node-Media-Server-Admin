@@ -3,6 +3,7 @@ import { Row, Col, Button, App, Card, Flex, Checkbox, Popover } from 'antd';
 import React, { useCallback, useState } from 'react';
 import { useLocalStorage } from 'usehooks-ts';
 import DashboardChart from './components/dashboard/DashboardChart';
+import ServerLogs from './components/dashboard/ServerLogs';
 import { useStats } from './context/StatsContext';
 import { useTranslation } from './context/LanguageContext';
 
@@ -12,7 +13,7 @@ const Dashboard = () => {
     const { t } = useTranslation();
     const { conOption, netOption, cpuOption, memOption } = state;
     const [refreshing, setRefreshing] = useState(false);
-    const [visibleCharts, setVisibleCharts] = useLocalStorage<string[]>('nms.admin.dashboard.visible', ['con', 'net', 'cpu', 'mem']);
+    const [visibleCharts, setVisibleCharts] = useLocalStorage<string[]>('nms.admin.dashboard.visible', ['con', 'net', 'cpu', 'mem', 'logs']);
 
     const handleRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -31,6 +32,7 @@ const Dashboard = () => {
         { label: t('network'), value: 'net' },
         { label: t('cpu'), value: 'cpu' },
         { label: t('mem'), value: 'mem' },
+        { label: t('server_logs'), value: 'logs' },
     ];
 
     const settingsContent = (
@@ -67,6 +69,7 @@ const Dashboard = () => {
             {visibleCharts.includes('net') && <DashboardChart option={netOption} height="348px" />}
             {visibleCharts.includes('cpu') && <DashboardChart option={cpuOption} height="300px" />}
             {visibleCharts.includes('mem') && <DashboardChart option={memOption} height="300px" />}
+            {visibleCharts.includes('logs') && <ServerLogs height="300px" />}
         </Row>
     );
 };

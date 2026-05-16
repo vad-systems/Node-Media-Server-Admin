@@ -1,8 +1,7 @@
-import { CameraOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Button, Divider, Space, Tooltip, Typography } from 'antd';
+import { CameraOutlined } from '@ant-design/icons';
+import { Button, Space, Tooltip, Typography } from 'antd';
 import FlvJs from 'flv.js';
-import React, { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import StateTag from './components/StateTag';
+import React, { CSSProperties, useCallback, useEffect, useMemo, useRef } from 'react';
 import SwitchControl from './components/streams/SwitchControl';
 import { BroadcastState, SessionState, SwitchTaskStatus } from './api/types';
 import { api } from './api/service';
@@ -40,7 +39,6 @@ type FlvPlayerProps = {
 
 const FlvPlayer = (props: FlvPlayerProps) => {
     const { t } = useTranslation();
-    const [flvPlayer, setFlvPlayer] = useState<FlvJs.Player | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     const {
@@ -79,28 +77,53 @@ const FlvPlayer = (props: FlvPlayerProps) => {
     }, [streamsData, app, name]);
 
     const broadcastId = live?.broadcastId ?? initialBroadcastId;
-    const broadcastState = live?.broadcastState ?? initialBroadcastState;
     const streamUptime = live?.uptime ?? initialUptime;
     const publisherId = live?.publisherId ?? initialPublisherId;
-    const publisherState = live?.publisherState ?? initialPublisherState;
 
-    const streamPath = app && name ? `${app}/${name}` : undefined;
-    const hasInfo = streamPath !== undefined || streamUptime !== undefined
-        || publisherId !== undefined || publisherState !== undefined
-        || broadcastId !== undefined || broadcastState !== undefined;
+    // Suppress unused warnings; states are surfaced via the dialog title in the parent.
+    void (live?.broadcastState ?? initialBroadcastState);
+    void (live?.publisherState ?? initialPublisherState);
+
+    const hasInfo = streamUptime !== undefined
+        || publisherId !== undefined
+        || broadcastId !== undefined;
+
+    const {
+        url, type, isLive, cors, withCredentials, hasAudio, hasVideo,
+        duration, filesize, segments, config: flvConfig,
+    } = playerProps;
+
+    // Only the inputs that actually affect the flv.js player instance.
+    // Polling-induced parent re-renders must NOT recreate the player, otherwise
+    // the video keeps restarting every few seconds.
+    const playerKey = useMemo(
+        () => JSON.stringify({
+            url, type, isLive, cors, withCredentials, hasAudio, hasVideo,
+            duration, filesize, segments, flvConfig,
+        }),
+        [url, type, isLive, cors, withCredentials, hasAudio, hasVideo,
+            duration, filesize, segments, flvConfig],
+    );
 
     const initFlv = useCallback(($video: HTMLVideoElement) => {
         let flvPlayer: FlvJs.Player | null = null;
 
         if ($video) {
             if (FlvJs.isSupported()) {
-                flvPlayer = FlvJs.createPlayer({ ...playerProps }, playerProps.config);
+                // Treat these streams as live so flv.js skips the seek bar / chasing buffer accordingly.
+                flvPlayer = FlvJs.createPlayer(
+                    {
+                        isLive: true,
+                        url, type: type as MediaType, cors, withCredentials,
+                        hasAudio, hasVideo, duration, filesize, segments,
+                    },
+                    { enableStashBuffer: false, ...flvConfig },
+                );
                 flvPlayer.attachMediaElement($video);
                 flvPlayer.load();
                 flvPlayer.play()?.catch(() => {
                     // Auto-play might be blocked, it's fine
                 });
-                setFlvPlayer(flvPlayer);
             }
         }
 
@@ -111,15 +134,8 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                 flvPlayer.destroy();
             }
         };
-    }, [props]);
-
-    const handleReload = () => {
-        if (flvPlayer) {
-            flvPlayer.unload();
-            flvPlayer.load();
-            flvPlayer.play();
-        }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [playerKey]);
 
     const takeScreenshot = () => {
         if (videoRef.current) {
@@ -143,26 +159,13 @@ const FlvPlayer = (props: FlvPlayerProps) => {
 
     return (
         <div className={className} style={style}>
-        {hasInfo && (
-            <div style={{ marginBottom: 8 }}>
-                <Space wrap size={8} align="center">
-                    {streamPath && (
-                        <Typography.Text strong style={{ fontSize: 16 }}>{streamPath}</Typography.Text>
-                    )}
-                    {broadcastState !== undefined && (
-                        <StateTag kind="broadcast" state={broadcastState} />
-                    )}
-                    {publisherState !== undefined && (
-                        <StateTag kind="session" state={publisherState} />
-                    )}
-                </Space>
-            </div>
-        )}
         <div
             style={{ position: 'relative', width: '100%', backgroundColor: '#000' }}
         >
             <video
                 controls
+                controlsList="nodownload noplaybackrate"
+                disablePictureInPicture={false}
                 autoPlay
                 muted
                 style={{
@@ -180,15 +183,6 @@ const FlvPlayer = (props: FlvPlayerProps) => {
                 }}
             >
                 <Space>
-                    <Tooltip title={t('reload')}>
-                        <Button
-                            size="small"
-                            shape="circle"
-                            icon={<ReloadOutlined />}
-                            onClick={handleReload}
-                            ghost
-                        />
-                    </Tooltip>
                     <Tooltip title={t('snapshot')}>
                         <Button
                             size="small"
@@ -202,24 +196,33 @@ const FlvPlayer = (props: FlvPlayerProps) => {
             </div>
         </div>
         {hasInfo && (streamUptime || broadcastId || publisherId) && (
-            <div style={{ marginTop: 8, fontSize: 12 }}>
-                <Space split={<Divider type="vertical" style={{ margin: 0 }} />} wrap size={4}>
-                    {streamUptime !== undefined && (
-                        <Typography.Text type="secondary">
-                            {t('uptime')}: {streamUptime}
-                        </Typography.Text>
-                    )}
-                    {broadcastId !== undefined && (
-                        <Typography.Text type="secondary">
-                            {t('broadcast_id')}: <Typography.Text code copyable={{ text: broadcastId }}>{broadcastId}</Typography.Text>
-                        </Typography.Text>
-                    )}
-                    {publisherId !== undefined && (
-                        <Typography.Text type="secondary">
-                            {t('publisher_id')}: <Typography.Text code copyable={{ text: publisherId }}>{publisherId}</Typography.Text>
-                        </Typography.Text>
-                    )}
-                </Space>
+            <div
+                style={{
+                    marginTop: 8,
+                    fontSize: 12,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 2fr 2fr',
+                    columnGap: 12,
+                    alignItems: 'baseline',
+                }}
+            >
+                <div style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <Typography.Text type="secondary">
+                        {t('uptime')}: {streamUptime ?? '-'}
+                    </Typography.Text>
+                </div>
+                <div style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <Typography.Text type="secondary">{t('broadcast_id')}: </Typography.Text>
+                    {broadcastId
+                        ? <Typography.Text code copyable={{ text: broadcastId }}>{broadcastId}</Typography.Text>
+                        : <Typography.Text type="secondary">-</Typography.Text>}
+                </div>
+                <div style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <Typography.Text type="secondary">{t('publisher_id')}: </Typography.Text>
+                    {publisherId
+                        ? <Typography.Text code copyable={{ text: publisherId }}>{publisherId}</Typography.Text>
+                        : <Typography.Text type="secondary">-</Typography.Text>}
+                </div>
             </div>
         )}
         {switchInfo && <SwitchControl switchInfo={switchInfo} onSwitched={onSwitched} />}

@@ -1,29 +1,34 @@
-import { 
-    CloudUploadOutlined, 
-    InteractionOutlined, 
-    NodeIndexOutlined, 
-    PartitionOutlined, 
-    SettingOutlined, 
+import {
+    InteractionOutlined,
+    NodeIndexOutlined,
+    PartitionOutlined,
     SaveOutlined,
-    LockOutlined,
-    SafetyCertificateOutlined,
-    FileTextOutlined,
-    ClusterOutlined,
-    SwapOutlined
+    SwapOutlined,
+    PictureOutlined,
 } from '@ant-design/icons';
-import { App, Card, Col, Flex, Row, Switch, Form, InputNumber, Input, Button, Skeleton, Divider, Typography, Alert } from 'antd';
+import { Alert, App, Button, Card, Col, Form, Row, Skeleton, theme } from 'antd';
 import React, { useCallback, useEffect } from 'react';
 import { api } from './api/service';
-import { Config as ConfigType } from './api/types';
+import AuthConfigCard from './components/config/AuthConfigCard';
+import HttpConfigCard from './components/config/HttpConfigCard';
+import LoggingConfigCard from './components/config/LoggingConfigCard';
+import RtmpConfigCard from './components/config/RtmpConfigCard';
+import TaskSectionCard from './components/config/TaskSectionCard';
+import {
+    renderFissionTask,
+    renderRelayTask,
+    renderStaticTask,
+    renderSwitchTask,
+    renderTransTask,
+} from './components/config/taskRenderers';
 import { useTranslation } from './context/LanguageContext';
 import { useFetch } from './hooks/useFetch';
-
-const { Text } = Typography;
 
 const Config = () => {
     const { message } = App.useApp();
     const { t } = useTranslation();
     const [form] = Form.useForm();
+    const { token } = theme.useToken();
 
     const onError = useCallback(async (e: Error) => {
         await message.error(`${t('failed_fetch_config')}: ${e.message}`);
@@ -43,19 +48,22 @@ const Config = () => {
                 auth: config.auth,
                 trans: {
                     ffmpeg: config.trans?.ffmpeg,
-                    // keep tasks as JSON for now to keep the UI clean
-                    tasks: JSON.stringify(config.trans?.tasks, null, 2),
+                    tasks: config.trans?.tasks ?? [],
                 },
                 relay: {
                     ffmpeg: config.relay?.ffmpeg,
-                    tasks: JSON.stringify(config.relay?.tasks, null, 2),
+                    tasks: config.relay?.tasks ?? [],
                 },
                 fission: {
                     ffmpeg: config.fission?.ffmpeg,
-                    tasks: JSON.stringify(config.fission?.tasks, null, 2),
+                    tasks: config.fission?.tasks ?? [],
                 },
                 switch: {
-                    tasks: JSON.stringify(config.switch?.tasks, null, 2),
+                    tasks: config.switch?.tasks ?? [],
+                },
+                static: {
+                    ffmpeg: config.static?.ffmpeg,
+                    tasks: config.static?.tasks ?? [],
                 },
                 logType: config.logType,
                 rollingLogLength: config.rollingLogLength,
@@ -77,24 +85,30 @@ const Config = () => {
             if (values.trans) {
                 patch.trans = {
                     ffmpeg: values.trans.ffmpeg,
-                    tasks: values.trans.tasks ? JSON.parse(values.trans.tasks) : [],
+                    tasks: values.trans.tasks ?? [],
                 };
             }
             if (values.relay) {
                 patch.relay = {
                     ffmpeg: values.relay.ffmpeg,
-                    tasks: values.relay.tasks ? JSON.parse(values.relay.tasks) : [],
+                    tasks: values.relay.tasks ?? [],
                 };
             }
             if (values.fission) {
                 patch.fission = {
                     ffmpeg: values.fission.ffmpeg,
-                    tasks: values.fission.tasks ? JSON.parse(values.fission.tasks) : [],
+                    tasks: values.fission.tasks ?? [],
                 };
             }
             if (values.switch) {
                 patch.switch = {
-                    tasks: values.switch.tasks ? JSON.parse(values.switch.tasks) : [],
+                    tasks: values.switch.tasks ?? [],
+                };
+            }
+            if (values.static) {
+                patch.static = {
+                    ffmpeg: values.static.ffmpeg,
+                    tasks: values.static.tasks ?? [],
                 };
             }
 
@@ -104,7 +118,7 @@ const Config = () => {
         } catch (e: any) {
             message.error(`${t('config_failed')}: ${e.message}`);
         }
-    }, [api, message, refetch, t]);
+    }, [message, refetch, t]);
 
     if (loading && !config) {
         return (
@@ -138,206 +152,73 @@ const Config = () => {
                         style={{ marginBottom: 16 }}
                     />
                 </Col>
+                <Col span={24}><HttpConfigCard /></Col>
+                <Col span={24}><RtmpConfigCard /></Col>
+                <Col span={24}><AuthConfigCard /></Col>
                 <Col span={24}>
-                    <Card 
-                        title={<Flex align="center" gap="small"><SettingOutlined /><span>{t('http_s_config')}</span></Flex>}
-                        extra={<Button type="primary" icon={<SaveOutlined />} htmlType="submit" disabled>{t('save_changes')}</Button>}
-                    >
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['http', 'port']} label={t('port') + ' (HTTP)'}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['https', 'port']} label={t('port') + ' (HTTPS)'}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['http', 'allow_origin']} label={t('allow_origin')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['http', 'api']} label={t('enable_api')} valuePropName="checked">
-                                    <Switch />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['http', 'webroot']} label={t('web_root')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                            <Col span={24}>
-                                <Form.Item name={['http', 'mediaroot']} label={t('media_root')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                        <Divider orientation="left">{t('https_config')}</Divider>
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12} md={8}>
-                                <Form.Item name={['https', 'key']} label={t('ssl_key_path')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={8}>
-                                <Form.Item name={['https', 'cert']} label={t('ssl_cert_path')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={8}>
-                                <Form.Item name={['https', 'passphrase']} label={t('ssl_passphrase')}>
-                                    <Input.Password />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Card>
+                    <TaskSectionCard
+                        icon={<PartitionOutlined />}
+                        titleKey="component_trans"
+                        sectionName="trans"
+                        renderTask={renderTransTask}
+                    />
                 </Col>
-
                 <Col span={24}>
-                    <Card title={<Flex align="center" gap="small"><CloudUploadOutlined /><span>{t('rtmp_config')}</span></Flex>}>
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'port']} label={t('port')}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'chunk_size']} label={t('chunk_size')}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'ping']} label={t('ping_interval')}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'ping_timeout']} label={t('ping_timeout')}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'gop_cache']} label={t('gop_cache')} valuePropName="checked">
-                                    <Switch />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                        <Divider orientation="left">{t('rtmp_config')} SSL</Divider>
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['rtmp', 'ssl', 'port']} label={t('ssl_port')}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={9}>
-                                <Form.Item name={['rtmp', 'ssl', 'key']} label={t('ssl_key_path')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={9}>
-                                <Form.Item name={['rtmp', 'ssl', 'cert']} label={t('ssl_cert_path')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Card>
+                    <TaskSectionCard
+                        icon={<NodeIndexOutlined />}
+                        titleKey="component_relay"
+                        sectionName="relay"
+                        renderTask={renderRelayTask}
+                    />
                 </Col>
-
                 <Col span={24}>
-                    <Card title={<Flex align="center" gap="small"><LockOutlined /><span>{t('auth_config')}</span></Flex>}>
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12} md={4}>
-                                <Form.Item name={['auth', 'api']} label={t('api_auth')} valuePropName="checked">
-                                    <Switch />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['auth', 'api_user']} label={t('api_user')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name={['auth', 'api_pass']} label={t('api_pass')}>
-                                    <Input.Password />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={4}>
-                                <Form.Item name={['auth', 'play']} label={t('play_auth')} valuePropName="checked">
-                                    <Switch />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={4}>
-                                <Form.Item name={['auth', 'publish']} label={t('publish_auth')} valuePropName="checked">
-                                    <Switch />
-                                </Form.Item>
-                            </Col>
-                            <Col span={24}>
-                                <Form.Item name={['auth', 'secret']} label={t('secret_key')}>
-                                    <Input />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Card>
+                    <TaskSectionCard
+                        icon={<InteractionOutlined />}
+                        titleKey="component_fission"
+                        sectionName="fission"
+                        renderTask={renderFissionTask}
+                    />
                 </Col>
-
-                <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><PartitionOutlined /><span>{t('component_trans')}</span></Flex>}>
-                        <Form.Item name={['trans', 'ffmpeg']} label={t('ffmpeg_path')}>
-                            <Input />
-                        </Form.Item>
-                        <Form.Item name={['trans', 'tasks']} label={t('tasks_json')}>
-                            <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
-                        </Form.Item>
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><NodeIndexOutlined /><span>{t('component_relay')}</span></Flex>}>
-                        <Form.Item name={['relay', 'ffmpeg']} label={t('ffmpeg_path')}>
-                            <Input />
-                        </Form.Item>
-                        <Form.Item name={['relay', 'tasks']} label={t('tasks_json')}>
-                            <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
-                        </Form.Item>
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><InteractionOutlined /><span>{t('component_fission')}</span></Flex>}>
-                        <Form.Item name={['fission', 'ffmpeg']} label={t('ffmpeg_path')}>
-                            <Input />
-                        </Form.Item>
-                        <Form.Item name={['fission', 'tasks']} label={t('tasks_json')}>
-                            <Input.TextArea rows={10} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
-                        </Form.Item>
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card title={<Flex align="center" gap="small"><SwapOutlined /><span>{t('component_switch')}</span></Flex>}>
-                        <Form.Item name={['switch', 'tasks']} label={t('tasks_json')}>
-                            <Input.TextArea rows={12} style={{ fontFamily: 'monospace', fontSize: '11px' }} />
-                        </Form.Item>
-                    </Card>
-                </Col>
-
                 <Col span={24}>
-                    <Card title={<Flex align="center" gap="small"><FileTextOutlined /><span>{t('logging_config')}</span></Flex>}>
-                        <Row gutter={16}>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name="logType" label={t('log_type')}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                                <Form.Item name="rollingLogLength" label={t('log_length')}>
-                                    <InputNumber style={{ width: '100%' }} />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </Card>
+                    <TaskSectionCard
+                        icon={<SwapOutlined />}
+                        titleKey="component_switch"
+                        sectionName="switch"
+                        renderTask={renderSwitchTask}
+                        withFfmpeg={false}
+                    />
                 </Col>
+                <Col span={24}>
+                    <TaskSectionCard
+                        icon={<PictureOutlined />}
+                        titleKey="component_static"
+                        sectionName="static"
+                        renderTask={renderStaticTask}
+                    />
+                </Col>
+                <Col span={24}><LoggingConfigCard /></Col>
             </Row>
+            <div
+                style={{
+                    position: 'sticky',
+                    bottom: 0,
+                    marginTop: 16,
+                    marginLeft: -16,
+                    marginRight: -16,
+                    marginBottom: -16,
+                    padding: '12px 16px',
+                    background: token.colorBgContainer,
+                    borderTop: `1px solid ${token.colorBorderSecondary}`,
+                    boxShadow: '0 -2px 8px rgba(0,0,0,0.06)',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    zIndex: 10,
+                }}
+            >
+                <Button type="primary" icon={<SaveOutlined />} htmlType="submit" disabled>
+                    {t('save_changes')}
+                </Button>
+            </div>
         </Form>
     );
 };

@@ -1,4 +1,4 @@
-import { Config, FissionStats, RelayInfo, RelayStats, ServerInfo, ServerStatus, SingleStreamInfo, StreamsTree, StreamStats, SwitchRequest, SwitchStats, TransStats } from './types';
+import { Config, FissionStats, RelayInfo, RelayStats, ServerInfo, ServerStatus, SingleStreamInfo, StaticStats, StreamsTree, StreamStats, SwitchRequest, SwitchStats, TransStats } from './types';
 
 const API_BASE_URL = process.env.API_BASE_URL || '';
 
@@ -34,9 +34,9 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(config),
     }),
-    startServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch') =>
+    startServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch' | 'static') =>
         request<{ status: string }>(`/api/server/${server}/start`, { method: 'POST' }),
-    stopServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch') =>
+    stopServer: (server: 'rtmp' | 'av' | 'trans' | 'relay' | 'fission' | 'switch' | 'static') =>
         request<{ status: string }>(`/api/server/${server}/stop`, { method: 'POST' }),
 
     getStreams: () => request<StreamStats>('/api/streams'),
@@ -81,4 +81,9 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ path }),
     }),
+
+    getStaticTasks: () => request<StaticStats>('/api/static'),
+
+    // Server-sent events stream of log messages.
+    getServerLogsUrl: () => `${API_BASE_URL}/api/server/logs`,
 };

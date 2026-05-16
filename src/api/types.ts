@@ -9,6 +9,7 @@ export interface ServerStatus {
     rtmp: ComponentStatus;
     trans: ComponentStatus;
     switch: ComponentStatus;
+    static: ComponentStatus;
 }
 
 export type SessionState =
@@ -182,6 +183,30 @@ export interface SwitchConfig {
     tasks: SwitchTaskConfig[];
 }
 
+export interface StaticTaskConfig {
+    app: string;
+    name: string;
+    input: string;
+    textPath?: string;
+}
+
+export interface StaticConfig {
+    ffmpeg: string;
+    tasks: StaticTaskConfig[];
+}
+
+export interface StaticTaskStatus {
+    id: string;
+    app: string;
+    name: string;
+    streamPath: string;
+    state?: SessionState;
+    input: string;
+    textPath?: string;
+}
+
+export type StaticStats = StaticTaskStatus[];
+
 export interface Config {
     http: HttpConfig;
     https: HttpsConfig;
@@ -190,6 +215,7 @@ export interface Config {
     relay?: RelayConfig;
     fission?: FissionConfig;
     switch?: SwitchConfig;
+    static?: StaticConfig;
     auth?: AuthConfig;
     cluster?: object;
     logType?: number;

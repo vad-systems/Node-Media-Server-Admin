@@ -1,5 +1,5 @@
 import { ApartmentOutlined, LockOutlined, SyncOutlined } from '@ant-design/icons';
-import { App, Button, Card, Input, Flex, Modal, Radio } from 'antd';
+import { App, Button, Card, Input, Flex, Modal, Radio, Space, Typography } from 'antd';
 import { md5 } from 'js-md5';
 import React, { ChangeEventHandler, Fragment, useCallback, useState, useMemo } from 'react';
 import Cookies from 'universal-cookie';
@@ -7,6 +7,7 @@ import { useLocalStorage } from 'usehooks-ts';
 import { api } from './api/service';
 import { StreamStats } from './api/types.js';
 import FlvPlayer from './FlvPlayer';
+import StateTag from './components/StateTag';
 import ClientTable from './components/streams/ClientTable';
 import StreamDetails from './components/streams/StreamDetails';
 import StreamTable from './components/streams/StreamTable';
@@ -18,7 +19,7 @@ import { useTranslation } from './context/LanguageContext';
 import spaceship from './util/spaceship';
 
 const Streams = () => {
-    const { message, modal } = App.useApp();
+    const { message } = App.useApp();
     const { t } = useTranslation();
     const [cookies] = useState(new Cookies());
 
@@ -27,6 +28,7 @@ const Streams = () => {
     const [grouping, setGrouping] = useLocalStorage<'none' | 'app' | 'prefix'>('nms.admin.streams.grouping', 'none');
     const [viewingStreamKey, setViewingStreamKey] = useState<string | null>(null);
     const [modalType, setModalType] = useState<'clients' | 'details' | null>(null);
+    const [playerStream, setPlayerStream] = useState<{ app: string; name: string; sign: string } | null>(null);
     const [treeOpen, setTreeOpen] = useState(false);
 
     const { data: switchData, loading: switchLoading, refetch: refetchSwitch } = useFetch(api.getSwitchTasks, {
@@ -75,27 +77,16 @@ const Streams = () => {
             const key = hash.hex();
             sign = `?sign=${ext}-${key}`;
         }
+        setPlayerStream({ app: record.app, name: record.name, sign });
+    }, [password]);
 
-        modal.info({
-            icon: null,
-            title: t('video_player'),
-            width: 720,
-            height: 480,
-            content: <FlvPlayer
-                url={`/${record.app}/${record.name}.flv${sign}`}
-                type="flv"
-                switchInfo={record.switchInfo}
-                onSwitched={refetchSwitch}
-                app={record.app}
-                name={record.name}
-                streamUptime={record.time}
-                publisherId={record.id}
-                publisherState={record.publisherState}
-                broadcastId={record.broadcastId}
-                broadcastState={record.state}
-            />,
-        });
-    }, [password, modal, t, refetchSwitch]);
+    const closePlayer = useCallback(() => setPlayerStream(null), []);
+
+    // Live view of the currently-playing stream, so the dialog title reflects polling updates.
+    const livePlayerStream = useMemo(() => {
+        if (!playerStream) return null;
+        return streamsData.find(s => s.app === playerStream.app && s.name === playerStream.name) || null;
+    }, [playerStream, streamsData]);
 
     const showClients = useCallback((record: StreamData) => {
         setViewingStreamKey(`${record.app}/${record.name}`);
@@ -253,6 +244,48 @@ const Streams = () => {
                 destroyOnHidden
             >
                 {treeOpen && <StreamTree />}
+            </Modal>
+
+            <Modal
+                open={!!playerStream}
+                onCancel={closePlayer}
+                footer={null}
+                width={720}
+                closable
+                maskClosable
+                destroyOnHidden
+                title={
+                    <Space size={8} wrap align="center">
+                        <span>{t('video_player')}</span>
+                        {playerStream && (
+                            <Typography.Text code style={{ fontSize: 13 }}>
+                                /{playerStream.app}/{playerStream.name}
+                            </Typography.Text>
+                        )}
+                        {livePlayerStream?.state !== undefined && (
+                            <StateTag kind="broadcast" state={livePlayerStream.state} />
+                        )}
+                        {livePlayerStream?.publisherState !== undefined && (
+                            <StateTag kind="session" state={livePlayerStream.publisherState} />
+                        )}
+                    </Space>
+                }
+            >
+                {playerStream && (
+                    <FlvPlayer
+                        url={`/${playerStream.app}/${playerStream.name}.flv${playerStream.sign}`}
+                        type="flv"
+                        switchInfo={livePlayerStream?.switchInfo}
+                        onSwitched={refetchSwitch}
+                        app={playerStream.app}
+                        name={playerStream.name}
+                        streamUptime={livePlayerStream?.time}
+                        publisherId={livePlayerStream?.id}
+                        publisherState={livePlayerStream?.publisherState}
+                        broadcastId={livePlayerStream?.broadcastId}
+                        broadcastState={livePlayerStream?.state}
+                    />
+                )}
             </Modal>
         </Fragment>
     );
