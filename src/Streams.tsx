@@ -1,4 +1,4 @@
-import { ApartmentOutlined, LockOutlined, SyncOutlined } from '@ant-design/icons';
+import { ApartmentOutlined, LockOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons';
 import { App, Button, Card, Input, Flex, Modal, Radio, Space, Typography } from 'antd';
 import { md5 } from 'js-md5';
 import React, { ChangeEventHandler, Fragment, useCallback, useState, useMemo } from 'react';
@@ -30,6 +30,7 @@ const Streams = () => {
     const [modalType, setModalType] = useState<'clients' | 'details' | null>(null);
     const [playerStream, setPlayerStream] = useState<{ app: string; name: string; sign: string } | null>(null);
     const [treeOpen, setTreeOpen] = useState(false);
+    const [filter, setFilter] = useState('');
 
     const { data: switchData, loading: switchLoading, refetch: refetchSwitch } = useFetch(api.getSwitchTasks, {
         immediate: true,
@@ -120,7 +121,16 @@ const Streams = () => {
     }, [password, refetch, message, t]);
 
     const displayData = useMemo(() => {
-        const sorted = [...streamsData].sort(
+        const q = filter.trim().toLowerCase();
+        const filtered = q
+            ? streamsData.filter(s =>
+                s.app?.toLowerCase().includes(q)
+                || s.name?.toLowerCase().includes(q)
+                || s.id?.toLowerCase().includes(q)
+                || s.broadcastId?.toLowerCase().includes(q)
+                || `${s.app}/${s.name}`.toLowerCase().includes(q))
+            : streamsData;
+        const sorted = [...filtered].sort(
             (
                 { app: aApp, name: aName, id: aId },
                 { app: bApp, name: bName, id: bId },
@@ -168,7 +178,7 @@ const Streams = () => {
         }
 
         return sorted;
-    }, [streamsData, grouping]);
+    }, [streamsData, grouping, filter]);
 
     const closeModal = () => {
         setViewingStreamKey(null);
@@ -186,6 +196,15 @@ const Streams = () => {
                 }
                 extra={
                     <Flex align="center" gap="small">
+                        <Input
+                            size="small"
+                            allowClear
+                            prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,.35)' }} />}
+                            placeholder={t('filter_streams')}
+                            value={filter}
+                            onChange={e => setFilter(e.target.value)}
+                            style={{ width: 200 }}
+                        />
                         <Radio.Group value={grouping} onChange={e => setGrouping(e.target.value)} size="small">
                             <Radio.Button value="none">{t('none')}</Radio.Button>
                             <Radio.Button value="app">{t('app')}</Radio.Button>

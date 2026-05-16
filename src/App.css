@@ -14,6 +14,64 @@
   background: #002140;
 }
 
+.streams-compact-table .ant-table-cell {
+  padding: 8px 10px !important;
+}
+
+.streams-compact-table .ant-table-thead > tr > th {
+  padding: 10px 10px !important;
+}
+
+.streams-compact-table .ant-table-cell:first-child,
+.streams-compact-table .ant-table-thead > tr > th:first-child {
+  min-width: 0 !important;
+}
+
+/* Hide the placeholder expand-icon spacer on leaf/data rows so they don't
+   inherit the indentation reserved for the group row's collapse toggle. */
+.streams-compact-table .ant-table-row-expand-icon-spaced {
+  display: none;
+}
+.streams-compact-table .ant-table-row-indent {
+  display: none;
+}
+
+/* Dark-mode contrast boost: lighten the regular body text so it's clearly
+   readable against the dark background (antd's default is a bit muted). */
+[data-theme="dark"], .dark-mode {
+  /* placeholder for tooling; actual override below uses :where for low-specificity */
+}
+
+/* Increase contrast in dark mode by lightening default text colors. We target
+   the antd CSS variables emitted by the dark algorithm. */
+.ant-app, .ant-layout {
+  /* no-op */
+}
+
+/* In dark mode (detected via antd's dark token applied to body), use a brighter
+   base text color. We rely on prefers-color-scheme as a fallback, but the main
+   switch is the .nms-dark class set on the layout. */
+.nms-dark, .nms-dark .ant-typography, .nms-dark .ant-card, .nms-dark .ant-table,
+.nms-dark .ant-descriptions, .nms-dark .ant-form, .nms-dark .ant-tabs,
+.nms-dark .ant-menu, .nms-dark .ant-modal, .nms-dark .ant-list {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.nms-dark .ant-typography-secondary,
+.nms-dark .ant-table-cell .ant-typography-secondary {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Log line highlight on hover */
+.nms-log-line {
+  display: block;
+  padding: 1px 4px;
+  border-radius: 2px;
+  transition: background-color 0.1s;
+}
+.nms-log-line:hover {
+  background-color: rgba(127, 127, 127, 0.18);
+}
+
 .logo h1{
   color:#fff;
   line-height: 64px;

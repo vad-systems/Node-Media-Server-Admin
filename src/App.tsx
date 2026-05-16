@@ -35,7 +35,7 @@ const App = ({ title = 'NodeMediaServer', shortTitle = 'NMS' }) => {
         <Router>
             <ConfigProvider theme={{ algorithm: isDarkMode ? darkAlgorithm : defaultAlgorithm }}>
                 <AntApp>
-                <Layout style={{ minHeight: '100vh' }}>
+                <Layout className={isDarkMode ? 'nms-dark' : undefined} style={{ minHeight: '100vh' }}>
                     <Sider
                         width={256}
                         trigger={null}

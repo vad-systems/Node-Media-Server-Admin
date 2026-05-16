@@ -86,4 +86,7 @@ export const api = {
 
     // Server-sent events stream of log messages.
     getServerLogsUrl: () => `${API_BASE_URL}/api/server/logs`,
+
+    // Server-sent events stream of server info / stats.
+    getServerInfoUrl: () => `${API_BASE_URL}/api/server`,
 };

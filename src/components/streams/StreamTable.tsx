@@ -32,9 +32,17 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             dataIndex: 'name',
             key: 'stream',
             fixed: 'left' as const,
-            width: 260,
             onCell: groupCellSpan,
             render: (name: string, record: StreamData) => {
+                const appTagStyle = (isMultiple: boolean): React.CSSProperties => ({
+                    display: 'inline-block',
+                    padding: '0 6px',
+                    marginRight: 6,
+                    background: isMultiple ? 'rgba(250,140,22,0.15)' : 'rgba(24,144,255,0.12)',
+                    color: isMultiple ? '#fa8c16' : '#1890ff',
+                    borderRadius: 3,
+                    fontWeight: 600,
+                });
                 if (record.isGroup) {
                     // Group label – keep the parenthesized count on the same line as the leading label,
                     // and keep the whole header (including the antd expand/collapse control area) from wrapping.
@@ -44,50 +52,39 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
                     const countLabel = countMatch ? countMatch[2] : '';
                     const isMultiple = record.app === 'Multiple';
                     const showAppPrefix = !!record.app && !baseLabel.startsWith(record.app);
-                    const prefixStyle: React.CSSProperties = isMultiple
-                        ? {
-                            display: 'inline-block',
-                            padding: '0 6px',
-                            marginRight: 6,
-                            background: 'rgba(250,140,22,0.15)',
-                            color: '#fa8c16',
-                            borderRadius: 3,
-                            fontWeight: 600,
-                        }
-                        : {
-                            display: 'inline-block',
-                            padding: '0 6px',
-                            marginRight: 6,
-                            background: 'rgba(24,144,255,0.12)',
-                            color: '#1890ff',
-                            borderRadius: 3,
-                            fontWeight: 600,
-                        };
                     return (
-                        <span style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>
+                        <span
+                            style={{
+                                position: 'sticky',
+                                left: 16,
+                                whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                            }}
+                        >
                             {showAppPrefix && (
-                                <span style={prefixStyle}>{isMultiple ? t('multiple') : record.app}</span>
+                                <span style={appTagStyle(isMultiple)}>{isMultiple ? t('multiple') : record.app}</span>
                             )}
                             <strong>{baseLabel}</strong>
                             {countLabel && <span style={{ marginLeft: 6, color: '#888' }}>{countLabel}</span>}
                         </span>
                     );
                 }
-                const path = `${record.app}/${name}`;
                 return (
-                    <Space direction="vertical" size={0}>
-                        <Space size={4}>
+                    <Space direction="vertical" size={0} style={{ maxWidth: '50vw' }}>
+                        <span style={{ wordBreak: 'break-word' }}>
+                            <span style={appTagStyle(false)}>{record.app}</span>
                             <a href="##" onClick={(e) => {
                                 e.preventDefault();
                                 openVideo(record);
-                            }}>{path}</a>
+                            }}>{name}</a>
                             {record.switchInfo && (
                                 <Tooltip title={`${t('switchable')}: ${record.switchInfo.activeSource}`}>
-                                    <SwapOutlined style={{ color: '#1890ff' }} />
-                                    {record.switchInfo.isSwitching && <SyncOutlined spin style={{ fontSize: '12px' }} />}
+                                    <SwapOutlined style={{ color: '#fa8c16', marginLeft: 6, fontSize: '16px' }} />
+                                    {record.switchInfo.isSwitching && <SyncOutlined spin style={{ color: '#fa8c16', fontSize: '12px', marginLeft: 4 }} />}
                                 </Tooltip>
                             )}
-                        </Space>
+                        </span>
                         {record.id && (
                             <Tooltip title={t('stream_id')}>
                                 <small style={{ color: '#888' }}>{record.id}</small>
@@ -101,6 +98,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             title: t('state'),
             key: 'state',
             width: 160,
+            align: 'center' as const,
             onCell: hiddenCellSpan,
             render: (_: any, record: StreamData) => {
                 if (record.isGroup) return null;
@@ -115,23 +113,61 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
         {
             title: t('audio'),
             key: 'audio',
-            width: 160,
+            width: 180,
             onCell: hiddenCellSpan,
             render: (_: any, record: StreamData) => {
                 if (record.isGroup) return null;
-                const rate = joinNonEmpty([record.freq, record.chan], '/');
-                return joinNonEmpty([record.ac, rate], ' ') || '-';
+                if (!record.ac && !record.freq && !record.chan) return '-';
+                const chanNum = record.chan ? parseInt(record.chan, 10) : NaN;
+                let chanLabel: string | undefined;
+                if (record.chan) {
+                    if (chanNum === 1) chanLabel = t('audio_mono');
+                    else if (chanNum === 2) chanLabel = t('audio_stereo');
+                    else if (!isNaN(chanNum)) chanLabel = `${chanNum} ${t('audio_channels')}`;
+                    else chanLabel = record.chan;
+                }
+                return (
+                    <Space size={6} wrap>
+                        {record.ac && (
+                            <span style={{
+                                display: 'inline-block',
+                                padding: '0 6px',
+                                background: 'rgba(82,196,26,0.15)',
+                                color: '#52c41a',
+                                borderRadius: 3,
+                                fontWeight: 600,
+                            }}>{record.ac}</span>
+                        )}
+                        {record.freq && <span>{record.freq}</span>}
+                        {chanLabel && <span style={{ color: '#888' }}>{chanLabel}</span>}
+                    </Space>
+                );
             },
         },
         {
             title: t('video'),
             key: 'video',
-            width: 200,
+            width: 220,
             onCell: hiddenCellSpan,
             render: (_: any, record: StreamData) => {
                 if (record.isGroup) return null;
+                if (!record.vc && !record.size && !record.fps) return '-';
                 const sizeFps = joinNonEmpty([record.size, record.fps ? `${record.fps}fps` : undefined], '@');
-                return joinNonEmpty([record.vc, sizeFps], ' ') || '-';
+                return (
+                    <Space size={6} wrap>
+                        {record.vc && (
+                            <span style={{
+                                display: 'inline-block',
+                                padding: '0 6px',
+                                background: 'rgba(114,46,209,0.15)',
+                                color: '#722ed1',
+                                borderRadius: 3,
+                                fontWeight: 600,
+                            }}>{record.vc}</span>
+                        )}
+                        {sizeFps && <span>{sizeFps}</span>}
+                    </Space>
+                );
             },
         },
         {
@@ -139,6 +175,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             dataIndex: 'time',
             key: 'time',
             width: 120,
+            align: 'right' as const,
             onCell: hiddenCellSpan,
             render: (time: string, record: any) => record.isGroup ? null : time,
         },
@@ -147,6 +184,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             dataIndex: 'clients',
             key: 'clients',
             width: 90,
+            align: 'center' as const,
             onCell: hiddenCellSpan,
             render: (_: any, record: any) => {
                 if (record.isGroup) return null;
@@ -162,6 +200,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             title: t('actions'),
             key: 'actions',
             width: 100,
+            align: 'center' as const,
             onCell: hiddenCellSpan,
             render: (_: any, record: any) => {
                 if (record.isGroup) return null;
@@ -191,8 +230,11 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
             columns={columns}
             loading={loading}
             bordered
+            size="small"
             pagination={false}
             scroll={{ x: 'max-content' }}
+            indentSize={0}
+            className="streams-compact-table"
         />
     );
 };
