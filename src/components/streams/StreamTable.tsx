@@ -71,7 +71,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
                     );
                 }
                 return (
-                    <Space direction="vertical" size={0} style={{ maxWidth: '50vw' }}>
+                    <Space direction="vertical" size={0} style={{ maxWidth: '40vw' }}>
                         <span style={{ wordBreak: 'break-word' }}>
                             <span style={appTagStyle(false)}>{record.app}</span>
                             <a href="##" onClick={(e) => {
@@ -113,7 +113,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
         {
             title: t('audio'),
             key: 'audio',
-            width: 180,
+            width: 220,
             onCell: hiddenCellSpan,
             render: (_: any, record: StreamData) => {
                 if (record.isGroup) return null;
@@ -147,7 +147,7 @@ const StreamTable = ({ dataSource, loading, openVideo, showClients, showDetails,
         {
             title: t('video'),
             key: 'video',
-            width: 220,
+            width: 260,
             onCell: hiddenCellSpan,
             render: (_: any, record: StreamData) => {
                 if (record.isGroup) return null;

@@ -195,28 +195,34 @@ const Streams = () => {
                     </Flex>
                 }
                 extra={
-                    <Flex align="center" gap="small">
-                        <Input
-                            size="small"
-                            allowClear
-                            prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,.35)' }} />}
-                            placeholder={t('filter_streams')}
-                            value={filter}
-                            onChange={e => setFilter(e.target.value)}
-                            style={{ width: 200 }}
-                        />
-                        <Radio.Group value={grouping} onChange={e => setGrouping(e.target.value)} size="small">
-                            <Radio.Button value="none">{t('none')}</Radio.Button>
-                            <Radio.Button value="app">{t('app')}</Radio.Button>
-                            <Radio.Button value="prefix">{t('prefix')}</Radio.Button>
-                        </Radio.Group>
-                        <Button
-                            size="small"
-                            icon={<ApartmentOutlined />}
-                            onClick={() => setTreeOpen(true)}
-                        >
-                            {t('tree_view')}
-                        </Button>
+                    <Flex align="center" gap="small" wrap="wrap" justify="flex-end">
+                        <Flex align="center" gap="small">
+                            <Input
+                                size="small"
+                                allowClear
+                                prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,.35)' }} />}
+                                placeholder={t('filter_streams')}
+                                value={filter}
+                                onChange={e => setFilter(e.target.value)}
+                                style={{ width: 200 }}
+                            />
+                        </Flex>
+                        <Flex align="center" gap="small">
+                            <Radio.Group value={grouping} onChange={e => setGrouping(e.target.value)} size="small">
+                                <Radio.Button value="none">{t('none')}</Radio.Button>
+                                <Radio.Button value="app">{t('app')}</Radio.Button>
+                                <Radio.Button value="prefix">{t('prefix')}</Radio.Button>
+                            </Radio.Group>
+                        </Flex>
+                        <Flex align="center" gap="small">
+                            <Button
+                                size="small"
+                                icon={<ApartmentOutlined />}
+                                onClick={() => setTreeOpen(true)}
+                            >
+                                {t('tree_view')}
+                            </Button>
+                        </Flex>
                     </Flex>
                 }
             >
