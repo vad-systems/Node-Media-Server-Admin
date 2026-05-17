@@ -49,7 +49,7 @@ pipeline {
 
         stage('Checkout admin tag') {
             steps {
-                dir('admin') {
+                dir('Node-Media-Server-Admin') {
                     checkout([
                         $class: 'GitSCM',
                         branches: [[name: "refs/tags/${env.TAG_NAME}"]],
@@ -68,7 +68,7 @@ pipeline {
 
         stage('Build admin and verify committed dist') {
             steps {
-                dir('admin') {
+                dir('Node-Media-Server-Admin') {
                     sh '''
                         set -eu
 
